@@ -3,6 +3,10 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/contexts/AuthContext";
+import LandingPage from "./pages/LandingPage";
+import Login from "./pages/Login";
+import Registro from "./pages/Registro";
 import Dashboard from "./pages/Dashboard";
 import Secretaria from "./pages/Secretaria";
 import Ministerios from "./pages/Ministerios";
@@ -19,23 +23,32 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/secretaria" element={<Secretaria />} />
-          <Route path="/ministerios" element={<Ministerios />} />
-          <Route path="/celulas" element={<Celulas />} />
-          <Route path="/ensino" element={<Ensino />} />
-          <Route path="/financeiro" element={<Financeiro />} />
-          <Route path="/eventos" element={<Eventos />} />
-          <Route path="/meu-app" element={<MeuApp />} />
-          <Route path="/configuracoes" element={<Configuracoes />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
+      <AuthProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/registro" element={<Registro />} />
+            
+            {/* App Routes */}
+            <Route path="/app" element={<Dashboard />} />
+            <Route path="/secretaria" element={<Secretaria />} />
+            <Route path="/ministerios" element={<Ministerios />} />
+            <Route path="/celulas" element={<Celulas />} />
+            <Route path="/ensino" element={<Ensino />} />
+            <Route path="/financeiro" element={<Financeiro />} />
+            <Route path="/eventos" element={<Eventos />} />
+            <Route path="/meu-app" element={<MeuApp />} />
+            <Route path="/configuracoes" element={<Configuracoes />} />
+            
+            {/* Catch-all */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

@@ -13,7 +13,12 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  DollarSign,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   TrendingUp,
   TrendingDown,
   Plus,
@@ -24,62 +29,98 @@ import {
   PiggyBank,
   Target,
   Calendar,
+  Loader2,
+  MoreHorizontal,
 } from "lucide-react";
+import { useFinancial, CreateTransactionData } from "@/hooks/useFinancial";
+import { TransactionModal } from "@/components/modals/TransactionModal";
+import { DeleteConfirmModal } from "@/components/modals/DeleteConfirmModal";
+import type { FinancialTransaction } from "@/hooks/useFinancial";
 
-const transactions = [
-  { id: 1, type: "income", category: "Dízimos", description: "Dízimos Domingo", amount: 2500, date: "2024-01-15", member: "Geral" },
-  { id: 2, type: "income", category: "Ofertas", description: "Ofertas Culto Domingo", amount: 850, date: "2024-01-15", member: "Geral" },
-  { id: 3, type: "expense", category: "Utilidades", description: "Energia Elétrica", amount: 450, date: "2024-01-14", member: "-" },
-  { id: 4, type: "income", category: "Campanhas", description: "Campanha Missões", amount: 1200, date: "2024-01-12", member: "Geral" },
-  { id: 5, type: "expense", category: "Manutenção", description: "Conserto Ar Condicionado", amount: 800, date: "2024-01-10", member: "-" },
-  { id: 6, type: "income", category: "Dízimos", description: "Dízimos Quarta", amount: 1800, date: "2024-01-10", member: "Geral" },
-  { id: 7, type: "expense", category: "Materiais", description: "Material de Limpeza", amount: 150, date: "2024-01-08", member: "-" },
-  { id: 8, type: "income", category: "Ofertas", description: "Ofertas Especiais", amount: 500, date: "2024-01-07", member: "Geral" },
-];
-
-const stats = [
-  {
-    title: "Saldo Atual",
-    value: "R$ 15.420,50",
-    change: "+12% vs mês anterior",
-    changeType: "positive",
-    icon: PiggyBank,
-    color: "bg-primary/10 text-primary",
-  },
-  {
-    title: "Entradas (Mês)",
-    value: "R$ 8.500,00",
-    change: "+8% vs mês anterior",
-    changeType: "positive",
-    icon: TrendingUp,
-    color: "bg-success/10 text-success",
-  },
-  {
-    title: "Saídas (Mês)",
-    value: "R$ 3.200,00",
-    change: "-5% vs mês anterior",
-    changeType: "positive",
-    icon: TrendingDown,
-    color: "bg-destructive/10 text-destructive",
-  },
-  {
-    title: "Dízimos (Mês)",
-    value: "R$ 6.800,00",
-    change: "+15% vs mês anterior",
-    changeType: "positive",
-    icon: Target,
-    color: "bg-secondary/10 text-secondary",
-  },
-];
-
-const campaigns = [
-  { name: "Missões 2024", goal: 10000, current: 4500, deadline: "Dez 2024" },
-  { name: "Reforma Templo", goal: 50000, current: 32000, deadline: "Jun 2024" },
-  { name: "Ação Social", goal: 5000, current: 5000, deadline: "Jan 2024" },
-];
+// Demo church ID for now - will be replaced with real auth
+const DEMO_CHURCH_ID = "00000000-0000-0000-0000-000000000001";
 
 export default function Financeiro() {
   const [activeTab, setActiveTab] = useState("overview");
+  const [transactionModalOpen, setTransactionModalOpen] = useState(false);
+  const [defaultTransactionType, setDefaultTransactionType] = useState<"receita" | "despesa">("receita");
+  const [editingTransaction, setEditingTransaction] = useState<FinancialTransaction | undefined>();
+  const [deletingTransaction, setDeletingTransaction] = useState<FinancialTransaction | null>(null);
+
+  const {
+    transactions,
+    categories,
+    isLoading,
+    totalIncome,
+    totalExpense,
+    balance,
+    createTransaction,
+    updateTransaction,
+    deleteTransaction,
+  } = useFinancial();
+
+  const stats = [
+    {
+      title: "Saldo Atual",
+      value: `R$ ${balance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`,
+      change: balance >= 0 ? "Positivo" : "Negativo",
+      changeType: balance >= 0 ? "positive" : "negative",
+      icon: PiggyBank,
+      color: "bg-primary/10 text-primary",
+    },
+    {
+      title: "Entradas (Total)",
+      value: `R$ ${totalIncome.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`,
+      change: "Receitas",
+      changeType: "positive",
+      icon: TrendingUp,
+      color: "bg-success/10 text-success",
+    },
+    {
+      title: "Saídas (Total)",
+      value: `R$ ${totalExpense.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`,
+      change: "Despesas",
+      changeType: "negative",
+      icon: TrendingDown,
+      color: "bg-destructive/10 text-destructive",
+    },
+    {
+      title: "Transações",
+      value: transactions.length.toString(),
+      change: "Total",
+      changeType: "neutral",
+      icon: Target,
+      color: "bg-secondary/10 text-secondary",
+    },
+  ];
+
+  const handleOpenNewTransaction = (type: "receita" | "despesa") => {
+    setEditingTransaction(undefined);
+    setDefaultTransactionType(type);
+    setTransactionModalOpen(true);
+  };
+
+  const handleOpenEditTransaction = (transaction: FinancialTransaction) => {
+    setEditingTransaction(transaction);
+    setDefaultTransactionType(transaction.type);
+    setTransactionModalOpen(true);
+  };
+
+  const handleCloseModal = (open: boolean) => {
+    setTransactionModalOpen(open);
+    if (!open) {
+      setEditingTransaction(undefined);
+    }
+  };
+
+  const handleCreateTransaction = async (data: CreateTransactionData) => {
+    return createTransaction({ ...data, church_id: DEMO_CHURCH_ID });
+  };
+
+  const handleUpdateTransaction = async (data: CreateTransactionData) => {
+    if (!editingTransaction) return { data: null, error: new Error("No transaction to edit") };
+    return updateTransaction(editingTransaction.id, data);
+  };
 
   return (
     <AppLayout>
@@ -97,9 +138,19 @@ export default function Financeiro() {
               <Download className="w-4 h-4 mr-2" />
               Relatório
             </Button>
-            <Button className="gradient-accent text-secondary-foreground shadow-lg hover:shadow-xl transition-all">
+            <Button 
+              variant="outline"
+              onClick={() => handleOpenNewTransaction("despesa")}
+            >
+              <ArrowDownRight className="w-4 h-4 mr-2" />
+              Nova Despesa
+            </Button>
+            <Button 
+              className="gradient-accent text-secondary-foreground shadow-lg hover:shadow-xl transition-all"
+              onClick={() => handleOpenNewTransaction("receita")}
+            >
               <Plus className="w-4 h-4 mr-2" />
-              Nova Entrada
+              Nova Receita
             </Button>
           </div>
         </div>
@@ -112,7 +163,10 @@ export default function Financeiro() {
                 <div>
                   <p className="text-sm text-muted-foreground">{stat.title}</p>
                   <p className="text-2xl font-bold mt-1">{stat.value}</p>
-                  <p className="text-xs text-success mt-1">{stat.change}</p>
+                  <p className={`text-xs mt-1 ${
+                    stat.changeType === "positive" ? "text-success" : 
+                    stat.changeType === "negative" ? "text-destructive" : "text-muted-foreground"
+                  }`}>{stat.change}</p>
                 </div>
                 <div className={`p-3 rounded-xl ${stat.color}`}>
                   <stat.icon className="w-5 h-5" />
@@ -127,18 +181,38 @@ export default function Financeiro() {
           <TabsList>
             <TabsTrigger value="overview">Visão Geral</TabsTrigger>
             <TabsTrigger value="transactions">Movimentações</TabsTrigger>
-            <TabsTrigger value="campaigns">Campanhas</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6 mt-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Recent Transactions */}
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle className="text-lg">Últimas Movimentações</CardTitle>
-                  <Button variant="ghost" size="sm">Ver todas</Button>
-                </CardHeader>
-                <CardContent>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="text-lg">Últimas Movimentações</CardTitle>
+                <Button variant="ghost" size="sm" onClick={() => setActiveTab("transactions")}>
+                  Ver todas
+                </Button>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <div className="flex items-center justify-center p-8">
+                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                  </div>
+                ) : transactions.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center p-8 text-center">
+                    <PiggyBank className="w-12 h-12 text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-medium">Nenhuma transação</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Comece registrando sua primeira transação.
+                    </p>
+                    <div className="flex gap-2">
+                      <Button variant="outline" onClick={() => handleOpenNewTransaction("despesa")}>
+                        Nova Despesa
+                      </Button>
+                      <Button onClick={() => handleOpenNewTransaction("receita")}>
+                        Nova Receita
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
                   <div className="space-y-4">
                     {transactions.slice(0, 5).map((tx) => (
                       <div
@@ -148,12 +222,12 @@ export default function Financeiro() {
                         <div className="flex items-center gap-3">
                           <div
                             className={`p-2 rounded-lg ${
-                              tx.type === "income"
+                              tx.type === "receita"
                                 ? "bg-success/10 text-success"
                                 : "bg-destructive/10 text-destructive"
                             }`}
                           >
-                            {tx.type === "income" ? (
+                            {tx.type === "receita" ? (
                               <ArrowUpRight className="w-4 h-4" />
                             ) : (
                               <ArrowDownRight className="w-4 h-4" />
@@ -162,76 +236,23 @@ export default function Financeiro() {
                           <div>
                             <p className="font-medium text-sm">{tx.description}</p>
                             <p className="text-xs text-muted-foreground">
-                              {tx.category} • {new Date(tx.date).toLocaleDateString("pt-BR")}
+                              {new Date(tx.transaction_date).toLocaleDateString("pt-BR")}
                             </p>
                           </div>
                         </div>
                         <span
                           className={`font-semibold ${
-                            tx.type === "income" ? "text-success" : "text-destructive"
+                            tx.type === "receita" ? "text-success" : "text-destructive"
                           }`}
                         >
-                          {tx.type === "income" ? "+" : "-"}R$ {tx.amount.toLocaleString("pt-BR")}
+                          {tx.type === "receita" ? "+" : "-"}R$ {Number(tx.amount).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                         </span>
                       </div>
                     ))}
                   </div>
-                </CardContent>
-              </Card>
-
-              {/* Campaigns Progress */}
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle className="text-lg">Campanhas Ativas</CardTitle>
-                  <Button variant="ghost" size="sm">Ver todas</Button>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-6">
-                    {campaigns.map((campaign) => (
-                      <div key={campaign.name} className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="font-medium">{campaign.name}</p>
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                              <Calendar className="w-3.5 h-3.5" />
-                              <span>{campaign.deadline}</span>
-                            </div>
-                          </div>
-                          <Badge
-                            variant={campaign.current >= campaign.goal ? "default" : "secondary"}
-                            className={
-                              campaign.current >= campaign.goal
-                                ? "bg-success text-success-foreground"
-                                : ""
-                            }
-                          >
-                            {Math.round((campaign.current / campaign.goal) * 100)}%
-                          </Badge>
-                        </div>
-                        <div className="space-y-1">
-                          <div className="h-3 bg-muted rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-gradient-to-r from-secondary to-warning rounded-full transition-all duration-500"
-                              style={{
-                                width: `${Math.min((campaign.current / campaign.goal) * 100, 100)}%`,
-                              }}
-                            />
-                          </div>
-                          <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">
-                              Arrecadado: R$ {campaign.current.toLocaleString("pt-BR")}
-                            </span>
-                            <span className="font-medium">
-                              Meta: R$ {campaign.goal.toLocaleString("pt-BR")}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="transactions" className="mt-6">
@@ -250,113 +271,104 @@ export default function Financeiro() {
                 </div>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Data</TableHead>
-                      <TableHead>Descrição</TableHead>
-                      <TableHead>Categoria</TableHead>
-                      <TableHead>Tipo</TableHead>
-                      <TableHead className="text-right">Valor</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {transactions.map((tx) => (
-                      <TableRow key={tx.id}>
-                        <TableCell>
-                          {new Date(tx.date).toLocaleDateString("pt-BR")}
-                        </TableCell>
-                        <TableCell className="font-medium">{tx.description}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{tx.category}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant="secondary"
-                            className={
-                              tx.type === "income"
-                                ? "bg-success/20 text-success"
-                                : "bg-destructive/20 text-destructive"
-                            }
-                          >
-                            {tx.type === "income" ? "Entrada" : "Saída"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell
-                          className={`text-right font-semibold ${
-                            tx.type === "income" ? "text-success" : "text-destructive"
-                          }`}
-                        >
-                          {tx.type === "income" ? "+" : "-"}R$ {tx.amount.toLocaleString("pt-BR")}
-                        </TableCell>
+                {isLoading ? (
+                  <div className="flex items-center justify-center p-8">
+                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                  </div>
+                ) : transactions.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center p-8 text-center">
+                    <PiggyBank className="w-12 h-12 text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-medium">Nenhuma transação</h3>
+                    <p className="text-muted-foreground">
+                      Registre sua primeira transação para começar.
+                    </p>
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Data</TableHead>
+                        <TableHead>Descrição</TableHead>
+                        <TableHead>Tipo</TableHead>
+                        <TableHead className="text-right">Valor</TableHead>
+                        <TableHead className="w-[50px]"></TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {transactions.map((tx) => (
+                        <TableRow key={tx.id}>
+                          <TableCell>
+                            {new Date(tx.transaction_date).toLocaleDateString("pt-BR")}
+                          </TableCell>
+                          <TableCell className="font-medium">{tx.description}</TableCell>
+                          <TableCell>
+                            <Badge
+                              variant="secondary"
+                              className={
+                                tx.type === "receita"
+                                  ? "bg-success/20 text-success"
+                                  : "bg-destructive/20 text-destructive"
+                              }
+                            >
+                              {tx.type === "receita" ? "Entrada" : "Saída"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell
+                            className={`text-right font-semibold ${
+                              tx.type === "receita" ? "text-success" : "text-destructive"
+                            }`}
+                          >
+                            {tx.type === "receita" ? "+" : "-"}R$ {Number(tx.amount).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                          </TableCell>
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                  <MoreHorizontal className="w-4 h-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleOpenEditTransaction(tx)}>
+                                  Editar
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  className="text-destructive"
+                                  onClick={() => setDeletingTransaction(tx)}
+                                >
+                                  Excluir
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
-
-          <TabsContent value="campaigns" className="mt-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {campaigns.map((campaign) => (
-                <Card key={campaign.name}>
-                  <CardContent className="pt-6">
-                    <div className="text-center mb-4">
-                      <h3 className="text-xl font-bold">{campaign.name}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Prazo: {campaign.deadline}
-                      </p>
-                    </div>
-                    <div className="relative h-32 w-32 mx-auto mb-4">
-                      <svg className="w-full h-full transform -rotate-90">
-                        <circle
-                          cx="64"
-                          cy="64"
-                          r="56"
-                          stroke="currentColor"
-                          strokeWidth="12"
-                          fill="none"
-                          className="text-muted"
-                        />
-                        <circle
-                          cx="64"
-                          cy="64"
-                          r="56"
-                          stroke="currentColor"
-                          strokeWidth="12"
-                          fill="none"
-                          strokeDasharray={`${(campaign.current / campaign.goal) * 352} 352`}
-                          className="text-secondary"
-                        />
-                      </svg>
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-2xl font-bold">
-                          {Math.round((campaign.current / campaign.goal) * 100)}%
-                        </span>
-                      </div>
-                    </div>
-                    <div className="text-center space-y-1">
-                      <p className="text-sm text-muted-foreground">
-                        Arrecadado:{" "}
-                        <span className="font-semibold text-foreground">
-                          R$ {campaign.current.toLocaleString("pt-BR")}
-                        </span>
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        Meta:{" "}
-                        <span className="font-semibold text-foreground">
-                          R$ {campaign.goal.toLocaleString("pt-BR")}
-                        </span>
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
         </Tabs>
       </div>
+
+      {/* Transaction Modal */}
+      <TransactionModal
+        open={transactionModalOpen}
+        onOpenChange={handleCloseModal}
+        transaction={editingTransaction}
+        categories={categories}
+        defaultType={defaultTransactionType}
+        onSubmit={editingTransaction ? handleUpdateTransaction : handleCreateTransaction}
+      />
+
+      {/* Delete Confirmation */}
+      <DeleteConfirmModal
+        open={!!deletingTransaction}
+        onOpenChange={(open) => !open && setDeletingTransaction(null)}
+        title="Excluir Transação"
+        description={`Tem certeza que deseja excluir "${deletingTransaction?.description}"? Esta ação não pode ser desfeita.`}
+        onConfirm={() => deleteTransaction(deletingTransaction!.id)}
+      />
     </AppLayout>
   );
 }
