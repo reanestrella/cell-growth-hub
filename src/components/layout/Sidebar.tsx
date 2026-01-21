@@ -20,7 +20,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 const menuItems = [
-  { icon: LayoutDashboard, label: "Dashboard", path: "/" },
+  { icon: LayoutDashboard, label: "Dashboard", path: "/app" },
   { icon: Users, label: "Secretaria", path: "/secretaria" },
   { icon: Heart, label: "Ministérios", path: "/ministerios" },
   { icon: Grid3X3, label: "Células", path: "/celulas" },
@@ -85,7 +85,8 @@ export function Sidebar() {
       {/* Navigation */}
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
         {menuItems.map((item) => {
-          const isActive = location.pathname === item.path;
+          const isActive = location.pathname === item.path || 
+            (item.path === "/app" && location.pathname === "/");
           return (
             <Link
               key={item.path}
