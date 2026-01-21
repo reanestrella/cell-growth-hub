@@ -256,6 +256,53 @@ export type Database = {
         }
         Relationships: []
       }
+      congregations: {
+        Row: {
+          address: string | null
+          church_id: string
+          city: string | null
+          created_at: string
+          id: string
+          is_active: boolean | null
+          is_main: boolean | null
+          name: string
+          state: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          church_id: string
+          city?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          is_main?: boolean | null
+          name: string
+          state?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          church_id?: string
+          city?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          is_main?: boolean | null
+          name?: string
+          state?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "congregations_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       course_students: {
         Row: {
           completed: boolean | null
@@ -546,72 +593,138 @@ export type Database = {
           },
         ]
       }
+      member_alerts: {
+        Row: {
+          alert_type: string
+          church_id: string
+          created_at: string
+          id: string
+          is_read: boolean | null
+          member_id: string
+          message: string | null
+        }
+        Insert: {
+          alert_type: string
+          church_id: string
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          member_id: string
+          message?: string | null
+        }
+        Update: {
+          alert_type?: string
+          church_id?: string
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          member_id?: string
+          message?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_alerts_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_alerts_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       members: {
         Row: {
           address: string | null
+          age_group: string | null
           baptism_date: string | null
           baptism_location: string | null
           birth_date: string | null
           church_id: string
           city: string | null
+          congregation_id: string | null
           conversion_date: string | null
           created_at: string
           email: string | null
           full_name: string
           gender: string | null
           id: string
+          inactivity_reason: string | null
           is_active: boolean
+          last_attendance_date: string | null
           marital_status: string | null
+          network: string | null
           notes: string | null
+          pastoral_notes: string | null
           phone: string | null
           photo_url: string | null
           spiritual_status: Database["public"]["Enums"]["spiritual_status"]
           state: string | null
           updated_at: string
+          wedding_date: string | null
         }
         Insert: {
           address?: string | null
+          age_group?: string | null
           baptism_date?: string | null
           baptism_location?: string | null
           birth_date?: string | null
           church_id: string
           city?: string | null
+          congregation_id?: string | null
           conversion_date?: string | null
           created_at?: string
           email?: string | null
           full_name: string
           gender?: string | null
           id?: string
+          inactivity_reason?: string | null
           is_active?: boolean
+          last_attendance_date?: string | null
           marital_status?: string | null
+          network?: string | null
           notes?: string | null
+          pastoral_notes?: string | null
           phone?: string | null
           photo_url?: string | null
           spiritual_status?: Database["public"]["Enums"]["spiritual_status"]
           state?: string | null
           updated_at?: string
+          wedding_date?: string | null
         }
         Update: {
           address?: string | null
+          age_group?: string | null
           baptism_date?: string | null
           baptism_location?: string | null
           birth_date?: string | null
           church_id?: string
           city?: string | null
+          congregation_id?: string | null
           conversion_date?: string | null
           created_at?: string
           email?: string | null
           full_name?: string
           gender?: string | null
           id?: string
+          inactivity_reason?: string | null
           is_active?: boolean
+          last_attendance_date?: string | null
           marital_status?: string | null
+          network?: string | null
           notes?: string | null
+          pastoral_notes?: string | null
           phone?: string | null
           photo_url?: string | null
           spiritual_status?: Database["public"]["Enums"]["spiritual_status"]
           state?: string | null
           updated_at?: string
+          wedding_date?: string | null
         }
         Relationships: [
           {
@@ -619,6 +732,13 @@ export type Database = {
             columns: ["church_id"]
             isOneToOne: false
             referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "members_congregation_id_fkey"
+            columns: ["congregation_id"]
+            isOneToOne: false
+            referencedRelation: "congregations"
             referencedColumns: ["id"]
           },
         ]
@@ -866,6 +986,54 @@ export type Database = {
             columns: ["schedule_id"]
             isOneToOne: false
             referencedRelation: "ministry_schedules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      spiritual_history: {
+        Row: {
+          church_id: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          event_date: string
+          event_type: string
+          id: string
+          member_id: string
+        }
+        Insert: {
+          church_id: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          event_date?: string
+          event_type: string
+          id?: string
+          member_id: string
+        }
+        Update: {
+          church_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          event_date?: string
+          event_type?: string
+          id?: string
+          member_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spiritual_history_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spiritual_history_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
             referencedColumns: ["id"]
           },
         ]

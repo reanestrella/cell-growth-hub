@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 export interface Member {
   id: string;
   church_id: string;
+  congregation_id: string | null;
   full_name: string;
   email: string | null;
   phone: string | null;
@@ -21,6 +22,12 @@ export interface Member {
   notes: string | null;
   photo_url: string | null;
   is_active: boolean;
+  network: string | null;
+  age_group: string | null;
+  wedding_date: string | null;
+  pastoral_notes: string | null;
+  last_attendance_date: string | null;
+  inactivity_reason: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -40,6 +47,12 @@ export interface CreateMemberData {
   baptism_location?: string;
   conversion_date?: string;
   notes?: string;
+  congregation_id?: string;
+  network?: string;
+  age_group?: string;
+  wedding_date?: string;
+  pastoral_notes?: string;
+  is_active?: boolean;
 }
 
 export function useMembers(churchId?: string) {
