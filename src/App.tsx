@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import LandingPage from "./pages/LandingPage";
 import Login from "./pages/Login";
 import Registro from "./pages/Registro";
+import Convite from "./pages/Convite";
 import Dashboard from "./pages/Dashboard";
 import Secretaria from "./pages/Secretaria";
 import Ministerios from "./pages/Ministerios";
@@ -32,6 +33,7 @@ const App = () => (
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<Login />} />
             <Route path="/registro" element={<Registro />} />
+            <Route path="/convite/:token" element={<Convite />} />
             
             {/* App Routes */}
             <Route path="/app" element={<Dashboard />} />
