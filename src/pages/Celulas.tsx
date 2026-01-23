@@ -28,6 +28,7 @@ import { useMembers } from "@/hooks/useMembers";
 import { CellModal } from "@/components/modals/CellModal";
 import { CellReportModal } from "@/components/modals/CellReportModal";
 import { DeleteConfirmModal } from "@/components/modals/DeleteConfirmModal";
+import { useAuth } from "@/contexts/AuthContext";
 import type { Cell } from "@/hooks/useCells";
 
 const statusConfig = {
@@ -37,9 +38,6 @@ const statusConfig = {
   inactive: { label: "Inativa", color: "bg-muted text-muted-foreground" },
 };
 
-// Demo church ID for now - will be replaced with real auth
-const DEMO_CHURCH_ID = "00000000-0000-0000-0000-000000000001";
-
 export default function Celulas() {
   const [cellModalOpen, setCellModalOpen] = useState(false);
   const [reportModalOpen, setReportModalOpen] = useState(false);
@@ -47,8 +45,10 @@ export default function Celulas() {
   const [deletingCell, setDeletingCell] = useState<Cell | null>(null);
   const [selectedCellId, setSelectedCellId] = useState<string | undefined>();
 
-  const { cells, reports, isLoading, createCell, updateCell, deleteCell, createReport } = useCells();
-  const { members } = useMembers();
+  const { profile } = useAuth();
+  const churchId = profile?.church_id;
+  const { cells, reports, isLoading, createCell, updateCell, deleteCell, createReport } = useCells(churchId || undefined);
+  const { members } = useMembers(churchId || undefined);
 
   // Get member name by ID
   const getMemberName = (memberId: string | null) => {
@@ -92,7 +92,8 @@ export default function Celulas() {
   };
 
   const handleCreateCell = async (data: CreateCellData) => {
-    return createCell({ ...data, church_id: DEMO_CHURCH_ID });
+    if (!churchId) return { data: null, error: new Error("Igreja não identificada") };
+    return createCell({ ...data, church_id: churchId });
   };
 
   const handleUpdateCell = async (data: CreateCellData) => {

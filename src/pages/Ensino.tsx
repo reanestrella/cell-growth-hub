@@ -27,10 +27,8 @@ import { useCourses, CreateCourseData } from "@/hooks/useCourses";
 import { useMembers } from "@/hooks/useMembers";
 import { CourseModal } from "@/components/modals/CourseModal";
 import { DeleteConfirmModal } from "@/components/modals/DeleteConfirmModal";
+import { useAuth } from "@/contexts/AuthContext";
 import type { Course } from "@/hooks/useCourses";
-
-// Demo church ID for now - will be replaced with real auth
-const DEMO_CHURCH_ID = "00000000-0000-0000-0000-000000000001";
 
 const trackColors: Record<string, string> = {
   novo_convertido: "bg-info/20 text-info",
@@ -51,8 +49,10 @@ export default function Ensino() {
   const [editingCourse, setEditingCourse] = useState<Course | undefined>();
   const [deletingCourse, setDeletingCourse] = useState<Course | null>(null);
   
-  const { courses, isLoading, createCourse, updateCourse, deleteCourse } = useCourses();
-  const { members } = useMembers();
+  const { profile } = useAuth();
+  const churchId = profile?.church_id;
+  const { courses, isLoading, createCourse, updateCourse, deleteCourse } = useCourses(churchId || undefined);
+  const { members } = useMembers(churchId || undefined);
 
   const getMemberName = (memberId: string | null) => {
     if (!memberId) return "Sem professor";
@@ -61,6 +61,7 @@ export default function Ensino() {
   };
 
   const handleCreateCourse = async (data: Partial<Course>) => {
+    if (!churchId) return { data: null, error: new Error("Igreja não identificada") };
     const createData: CreateCourseData & { church_id: string } = {
       name: data.name || "",
       description: data.description || undefined,
@@ -68,7 +69,7 @@ export default function Ensino() {
       teacher_id: data.teacher_id || undefined,
       start_date: data.start_date || undefined,
       end_date: data.end_date || undefined,
-      church_id: DEMO_CHURCH_ID,
+      church_id: churchId,
     };
     return createCourse(createData);
   };
