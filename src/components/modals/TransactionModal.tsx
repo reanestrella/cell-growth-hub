@@ -29,6 +29,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
+import { MemberAutocomplete } from "@/components/ui/member-autocomplete";
 import type { FinancialTransaction, FinancialCategory, CreateTransactionData } from "@/hooks/useFinancial";
 
 const transactionSchema = z.object({
@@ -37,6 +38,7 @@ const transactionSchema = z.object({
   description: z.string().min(2, "Descrição deve ter pelo menos 2 caracteres").max(200),
   transaction_date: z.string().min(1, "Data é obrigatória"),
   category_id: z.string().optional().or(z.literal("")),
+  member_id: z.string().optional().or(z.literal("")),
   payment_method: z.string().optional().or(z.literal("")),
   reference_number: z.string().optional().or(z.literal("")),
   notes: z.string().max(500).optional().or(z.literal("")),
@@ -50,6 +52,7 @@ interface TransactionModalProps {
   transaction?: FinancialTransaction;
   categories: FinancialCategory[];
   defaultType?: "receita" | "despesa";
+  churchId: string;
   onSubmit: (data: CreateTransactionData) => Promise<{ data: FinancialTransaction | null; error: any }>;
 }
 
@@ -59,6 +62,7 @@ export function TransactionModal({
   transaction,
   categories,
   defaultType = "receita",
+  churchId,
   onSubmit,
 }: TransactionModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -71,6 +75,7 @@ export function TransactionModal({
       description: transaction?.description || "",
       transaction_date: transaction?.transaction_date || new Date().toISOString().split("T")[0],
       category_id: transaction?.category_id || "",
+      member_id: transaction?.member_id || "",
       payment_method: transaction?.payment_method || "",
       reference_number: transaction?.reference_number || "",
       notes: transaction?.notes || "",
@@ -89,6 +94,7 @@ export function TransactionModal({
         description: data.description,
         transaction_date: data.transaction_date,
         category_id: data.category_id || undefined,
+        member_id: data.member_id || undefined,
         payment_method: data.payment_method || undefined,
         reference_number: data.reference_number || undefined,
         notes: data.notes || undefined,
@@ -216,6 +222,27 @@ export function TransactionModal({
                 </FormItem>
               )}
             />
+
+            {selectedType === "receita" && (
+              <FormField
+                control={form.control}
+                name="member_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Dizimista / Ofertante</FormLabel>
+                    <FormControl>
+                      <MemberAutocomplete
+                        churchId={churchId}
+                        value={field.value || ""}
+                        onChange={field.onChange}
+                        placeholder="Digite 3 letras para buscar..."
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             <FormField
               control={form.control}
