@@ -24,19 +24,20 @@ import {
 import { useEvents, CreateEventData } from "@/hooks/useEvents";
 import { EventModal } from "@/components/modals/EventModal";
 import { DeleteConfirmModal } from "@/components/modals/DeleteConfirmModal";
+import { useAuth } from "@/contexts/AuthContext";
 import type { Event } from "@/hooks/useEvents";
-
-// Demo church ID for now - will be replaced with real auth
-const DEMO_CHURCH_ID = "00000000-0000-0000-0000-000000000001";
 
 export default function Eventos() {
   const [eventModalOpen, setEventModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | undefined>();
   const [deletingEvent, setDeletingEvent] = useState<Event | null>(null);
   
-  const { events, isLoading, createEvent, updateEvent, deleteEvent } = useEvents();
+  const { profile } = useAuth();
+  const churchId = profile?.church_id;
+  const { events, isLoading, createEvent, updateEvent, deleteEvent } = useEvents(churchId || undefined);
 
   const handleCreateEvent = async (data: Partial<Event>) => {
+    if (!churchId) return { data: null, error: new Error("Igreja não identificada") };
     const createData: CreateEventData & { church_id: string } = {
       title: data.title || "",
       description: data.description || undefined,
@@ -45,7 +46,7 @@ export default function Eventos() {
       location: data.location || undefined,
       max_participants: data.max_participants || undefined,
       is_public: data.is_public ?? true,
-      church_id: DEMO_CHURCH_ID,
+      church_id: churchId,
     };
     return createEvent(createData);
   };

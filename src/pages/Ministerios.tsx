@@ -26,10 +26,8 @@ import { useMinistries, CreateMinistryData } from "@/hooks/useMinistries";
 import { useMembers } from "@/hooks/useMembers";
 import { MinistryModal } from "@/components/modals/MinistryModal";
 import { DeleteConfirmModal } from "@/components/modals/DeleteConfirmModal";
+import { useAuth } from "@/contexts/AuthContext";
 import type { Ministry } from "@/hooks/useMinistries";
-
-// Demo church ID for now - will be replaced with real auth
-const DEMO_CHURCH_ID = "00000000-0000-0000-0000-000000000001";
 
 const iconMap: Record<string, any> = {
   music: Music,
@@ -45,8 +43,10 @@ export default function Ministerios() {
   const [editingMinistry, setEditingMinistry] = useState<Ministry | undefined>();
   const [deletingMinistry, setDeletingMinistry] = useState<Ministry | null>(null);
   
-  const { ministries, isLoading, createMinistry, updateMinistry, deleteMinistry } = useMinistries();
-  const { members } = useMembers();
+  const { profile } = useAuth();
+  const churchId = profile?.church_id;
+  const { ministries, isLoading, createMinistry, updateMinistry, deleteMinistry } = useMinistries(churchId || undefined);
+  const { members } = useMembers(churchId || undefined);
 
   const getMemberName = (memberId: string | null) => {
     if (!memberId) return "Sem líder";
@@ -55,11 +55,12 @@ export default function Ministerios() {
   };
 
   const handleCreateMinistry = async (data: Partial<Ministry>) => {
+    if (!churchId) return { data: null, error: new Error("Igreja não identificada") };
     const createData: CreateMinistryData & { church_id: string } = {
       name: data.name || "",
       description: data.description || undefined,
       leader_id: data.leader_id || undefined,
-      church_id: DEMO_CHURCH_ID,
+      church_id: churchId,
     };
     return createMinistry(createData);
   };

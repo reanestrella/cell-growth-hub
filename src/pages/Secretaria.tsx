@@ -46,6 +46,7 @@ import { MemberModal } from "@/components/modals/MemberModal";
 import { DeleteConfirmModal } from "@/components/modals/DeleteConfirmModal";
 import { CongregationSelector } from "@/components/layout/CongregationSelector";
 import { useCongregations } from "@/hooks/useCongregations";
+import { useAuth } from "@/contexts/AuthContext";
 import type { Member } from "@/hooks/useMembers";
 
 const statusConfig = {
@@ -63,9 +64,6 @@ const networkConfig = {
   kids: { label: "Kids", icon: Baby, color: "text-success" },
 };
 
-// Demo church ID for now - will be replaced with real auth
-const DEMO_CHURCH_ID = "00000000-0000-0000-0000-000000000001";
-
 export default function Secretaria() {
   const [searchTerm, setSearchTerm] = useState("");
   const [memberModalOpen, setMemberModalOpen] = useState(false);
@@ -74,8 +72,10 @@ export default function Secretaria() {
   const [activeTab, setActiveTab] = useState("todos");
   const [networkFilter, setNetworkFilter] = useState<string>("all");
   
-  const { congregations, selectedCongregation, setSelectedCongregation } = useCongregations();
-  const { members, isLoading, createMember, updateMember, deleteMember } = useMembers();
+  const { profile } = useAuth();
+  const churchId = profile?.church_id;
+  const { congregations, selectedCongregation, setSelectedCongregation } = useCongregations(churchId || undefined);
+  const { members, isLoading, createMember, updateMember, deleteMember } = useMembers(churchId || undefined);
 
   // Filter members by tab, search, and network
   const filteredMembers = useMemo(() => {
@@ -133,9 +133,10 @@ export default function Secretaria() {
   }, [members]);
 
   const handleCreateMember = async (data: CreateMemberData) => {
+    if (!churchId) return { data: null, error: new Error("Igreja não identificada") };
     return createMember({ 
       ...data, 
-      church_id: DEMO_CHURCH_ID,
+      church_id: churchId,
       congregation_id: selectedCongregation || undefined,
     });
   };

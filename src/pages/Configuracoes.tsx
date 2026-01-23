@@ -21,9 +21,16 @@ import {
   Copy,
   Trash2,
   Loader2,
+  Building,
+  MapPin,
+  Edit,
 } from "lucide-react";
 import { useInvitations } from "@/hooks/useInvitations";
+import { useCongregations } from "@/hooks/useCongregations";
+import { useAuth } from "@/contexts/AuthContext";
 import { InviteUserModal } from "@/components/modals/InviteUserModal";
+import { CongregationModal } from "@/components/modals/CongregationModal";
+import type { Congregation, CreateCongregationData } from "@/hooks/useCongregations";
 
 const plans = [
   {
@@ -60,10 +67,35 @@ const roleLabels: Record<string, string> = {
 
 export default function Configuracoes() {
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
+  const [congregationModalOpen, setCongregationModalOpen] = useState(false);
+  const [editingCongregation, setEditingCongregation] = useState<Congregation | undefined>();
+  
+  const { profile } = useAuth();
+  const churchId = profile?.church_id;
   const { invitations, isLoading, createInvitation, deleteInvitation, getInviteLink } = useInvitations();
+  const { congregations, isLoading: loadingCongregations, createCongregation, updateCongregation } = useCongregations(churchId || undefined);
 
   const handleCopyLink = async (token: string) => {
     await navigator.clipboard.writeText(getInviteLink(token));
+  };
+
+  const handleOpenEditCongregation = (congregation: Congregation) => {
+    setEditingCongregation(congregation);
+    setCongregationModalOpen(true);
+  };
+
+  const handleCloseCongregationModal = (open: boolean) => {
+    setCongregationModalOpen(open);
+    if (!open) {
+      setEditingCongregation(undefined);
+    }
+  };
+
+  const handleCongregationSubmit = async (data: CreateCongregationData) => {
+    if (editingCongregation) {
+      return updateCongregation(editingCongregation.id, data);
+    }
+    return createCongregation(data);
   };
 
   return (
@@ -79,6 +111,10 @@ export default function Configuracoes() {
             <TabsTrigger value="church" className="gap-2">
               <Church className="w-4 h-4" />
               <span className="hidden sm:inline">Igreja</span>
+            </TabsTrigger>
+            <TabsTrigger value="filiais" className="gap-2">
+              <Building className="w-4 h-4" />
+              <span className="hidden sm:inline">Filiais</span>
             </TabsTrigger>
             <TabsTrigger value="users" className="gap-2">
               <Users className="w-4 h-4" />
@@ -124,6 +160,68 @@ export default function Configuracoes() {
                   </div>
                 </div>
                 <Button>Salvar Alterações</Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="filiais" className="space-y-6 mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Building className="w-5 h-5" />
+                  Filiais / Congregações
+                </CardTitle>
+                <CardDescription>
+                  Gerencie as filiais e congregações da sua igreja
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button onClick={() => {
+                  setEditingCongregation(undefined);
+                  setCongregationModalOpen(true);
+                }}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Nova Filial
+                </Button>
+
+                {loadingCongregations ? (
+                  <div className="flex items-center justify-center p-8">
+                    <Loader2 className="w-6 h-6 animate-spin" />
+                  </div>
+                ) : congregations.length > 0 ? (
+                  <div className="mt-4 space-y-3">
+                    {congregations.map((congregation) => (
+                      <div key={congregation.id} className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-lg bg-primary/10">
+                            <MapPin className="w-4 h-4 text-primary" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium">{congregation.name}</p>
+                              {congregation.is_main && (
+                                <Badge variant="secondary" className="text-xs">Sede</Badge>
+                              )}
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              {[congregation.address, congregation.city, congregation.state]
+                                .filter(Boolean)
+                                .join(", ") || "Endereço não informado"}
+                            </p>
+                          </div>
+                        </div>
+                        <Button variant="ghost" size="icon" onClick={() => handleOpenEditCongregation(congregation)}>
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="mt-4 p-8 text-center text-muted-foreground">
+                    <Building className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>Nenhuma filial cadastrada</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -269,6 +367,16 @@ export default function Configuracoes() {
         onSubmit={createInvitation}
         getInviteLink={getInviteLink}
       />
+
+      {churchId && (
+        <CongregationModal
+          open={congregationModalOpen}
+          onOpenChange={handleCloseCongregationModal}
+          congregation={editingCongregation}
+          onSubmit={handleCongregationSubmit}
+          churchId={churchId}
+        />
+      )}
     </AppLayout>
   );
 }
