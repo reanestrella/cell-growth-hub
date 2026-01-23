@@ -1,53 +1,83 @@
 import { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import type { Member } from "@/hooks/useMembers";
+import { supabase } from "@/integrations/supabase/client";
+
+interface Member {
+  id: string;
+  full_name: string;
+  phone: string | null;
+}
 
 interface MemberAutocompleteProps {
-  members: Member[];
+  churchId: string;
   value?: string;
-  onSelect: (member: Member | null) => void;
+  onChange: (memberId: string | null) => void;
   placeholder?: string;
   className?: string;
 }
 
 export function MemberAutocomplete({
-  members,
+  churchId,
   value,
-  onSelect,
-  placeholder = "Digite o nome do membro...",
+  onChange,
+  placeholder = "Digite 3 letras para buscar...",
   className,
 }: MemberAutocompleteProps) {
   const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
-  const [filteredMembers, setFilteredMembers] = useState<Member[]>([]);
+  const [members, setMembers] = useState<Member[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [selectedName, setSelectedName] = useState("");
   const wrapperRef = useRef<HTMLDivElement>(null);
 
-  // Set initial query from value
+  // Load selected member name when value changes
   useEffect(() => {
-    if (value) {
-      const member = members.find(m => m.id === value);
-      if (member) {
-        setQuery(member.full_name);
-      }
-    } else {
+    if (value && !selectedName) {
+      const fetchMember = async () => {
+        const { data } = await supabase
+          .from("members")
+          .select("id, full_name, phone")
+          .eq("id", value)
+          .single();
+        if (data) {
+          setSelectedName(data.full_name);
+          setQuery(data.full_name);
+        }
+      };
+      fetchMember();
+    } else if (!value) {
+      setSelectedName("");
       setQuery("");
     }
-  }, [value, members]);
+  }, [value]);
 
-  // Filter members when query changes
+  // Search members when query changes (min 3 characters)
   useEffect(() => {
-    if (query.length >= 3) {
-      const filtered = members.filter(m =>
-        m.full_name.toLowerCase().includes(query.toLowerCase())
-      ).slice(0, 10);
-      setFilteredMembers(filtered);
-      setIsOpen(filtered.length > 0);
+    if (query.length >= 3 && query !== selectedName) {
+      const searchMembers = async () => {
+        setIsLoading(true);
+        const { data, error } = await supabase
+          .from("members")
+          .select("id, full_name, phone")
+          .eq("church_id", churchId)
+          .ilike("full_name", `%${query}%`)
+          .limit(10);
+
+        if (!error && data) {
+          setMembers(data);
+          setIsOpen(data.length > 0);
+        }
+        setIsLoading(false);
+      };
+      
+      const debounce = setTimeout(searchMembers, 300);
+      return () => clearTimeout(debounce);
     } else {
-      setFilteredMembers([]);
+      setMembers([]);
       setIsOpen(false);
     }
-  }, [query, members]);
+  }, [query, churchId, selectedName]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -62,13 +92,15 @@ export function MemberAutocomplete({
 
   const handleSelect = (member: Member) => {
     setQuery(member.full_name);
-    onSelect(member);
+    setSelectedName(member.full_name);
+    onChange(member.id);
     setIsOpen(false);
   };
 
   const handleClear = () => {
     setQuery("");
-    onSelect(null);
+    setSelectedName("");
+    onChange(null);
     setIsOpen(false);
   };
 
@@ -79,15 +111,21 @@ export function MemberAutocomplete({
         onChange={(e) => {
           setQuery(e.target.value);
           if (e.target.value === "") {
-            onSelect(null);
+            setSelectedName("");
+            onChange(null);
           }
         }}
         placeholder={placeholder}
         className="w-full"
       />
+      {isLoading && (
+        <div className="absolute right-8 top-1/2 -translate-y-1/2">
+          <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        </div>
+      )}
       {isOpen && (
         <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-60 overflow-auto">
-          {filteredMembers.map((member) => (
+          {members.map((member) => (
             <button
               key={member.id}
               type="button"
@@ -110,7 +148,7 @@ export function MemberAutocomplete({
       {query && value && (
         <button
           type="button"
-          className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+          className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-lg"
           onClick={handleClear}
         >
           ×
