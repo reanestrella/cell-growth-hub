@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,10 +26,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useMinistries, CreateMinistryData } from "@/hooks/useMinistries";
 import { useMembers } from "@/hooks/useMembers";
+import { useMinistrySchedules } from "@/hooks/useMinistrySchedules";
 import { MinistryModal } from "@/components/modals/MinistryModal";
 import { DeleteConfirmModal } from "@/components/modals/DeleteConfirmModal";
 import { VolunteersModal } from "@/components/modals/VolunteersModal";
 import { ScheduleModal } from "@/components/modals/ScheduleModal";
+import { MinistryCalendar } from "@/components/ministry/MinistryCalendar";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Ministry } from "@/hooks/useMinistries";
 
@@ -63,11 +65,24 @@ export default function Ministerios() {
   const [deletingMinistry, setDeletingMinistry] = useState<Ministry | null>(null);
   const [volunteersMinistry, setVolunteersMinistry] = useState<Ministry | null>(null);
   const [scheduleMinistry, setScheduleMinistry] = useState<Ministry | null>(null);
+  const [calendarOpen, setCalendarOpen] = useState(false);
   
   const { profile } = useAuth();
   const churchId = profile?.church_id;
   const { ministries, isLoading, createMinistry, updateMinistry, deleteMinistry } = useMinistries(churchId || undefined);
   const { members } = useMembers(churchId || undefined);
+
+  // Fetch all schedules for the calendar view
+  const { schedules: allSchedules } = useMinistrySchedules();
+
+  // Create a map of ministry IDs to names
+  const ministryNames = useMemo(() => {
+    const map: Record<string, string> = {};
+    ministries.forEach((m) => {
+      map[m.id] = m.name;
+    });
+    return map;
+  }, [ministries]);
 
   const getMemberName = (memberId: string | null) => {
     if (!memberId) return "Sem líder";
@@ -120,7 +135,7 @@ export default function Ministerios() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline">
+            <Button variant="outline" onClick={() => setCalendarOpen(true)}>
               <Calendar className="w-4 h-4 mr-2" />
               Ver Escalas
             </Button>
@@ -262,6 +277,14 @@ export default function Ministerios() {
         onOpenChange={(open) => !open && setScheduleMinistry(null)}
         ministryId={scheduleMinistry?.id || ""}
         ministryName={scheduleMinistry?.name || ""}
+      />
+
+      {/* Calendar Modal */}
+      <MinistryCalendar
+        open={calendarOpen}
+        onOpenChange={setCalendarOpen}
+        schedules={allSchedules}
+        ministryNames={ministryNames}
       />
     </AppLayout>
   );

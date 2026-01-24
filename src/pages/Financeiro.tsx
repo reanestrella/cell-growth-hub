@@ -31,14 +31,17 @@ import {
   Calendar,
   Loader2,
   MoreHorizontal,
+  Users,
+  Heart,
 } from "lucide-react";
 import { useFinancial, CreateTransactionData } from "@/hooks/useFinancial";
+import { useTithers } from "@/hooks/useTithers";
 import { TransactionModal } from "@/components/modals/TransactionModal";
 import { DeleteConfirmModal } from "@/components/modals/DeleteConfirmModal";
+import { TithersTable } from "@/components/financial/TithersTable";
+import { TithersChart } from "@/components/financial/TithersChart";
+import { useAuth } from "@/contexts/AuthContext";
 import type { FinancialTransaction } from "@/hooks/useFinancial";
-
-// Demo church ID for now - will be replaced with real auth
-const DEMO_CHURCH_ID = "00000000-0000-0000-0000-000000000001";
 
 export default function Financeiro() {
   const [activeTab, setActiveTab] = useState("overview");
@@ -46,6 +49,9 @@ export default function Financeiro() {
   const [defaultTransactionType, setDefaultTransactionType] = useState<"receita" | "despesa">("receita");
   const [editingTransaction, setEditingTransaction] = useState<FinancialTransaction | undefined>();
   const [deletingTransaction, setDeletingTransaction] = useState<FinancialTransaction | null>(null);
+
+  const { profile } = useAuth();
+  const churchId = profile?.church_id;
 
   const {
     transactions,
@@ -57,7 +63,15 @@ export default function Financeiro() {
     createTransaction,
     updateTransaction,
     deleteTransaction,
-  } = useFinancial();
+  } = useFinancial(churchId || undefined);
+
+  const {
+    tithers,
+    months,
+    monthlyTotals,
+    stats: titherStats,
+    isLoading: loadingTithers,
+  } = useTithers(churchId || undefined);
 
   const stats = [
     {
@@ -114,7 +128,8 @@ export default function Financeiro() {
   };
 
   const handleCreateTransaction = async (data: CreateTransactionData) => {
-    return createTransaction({ ...data, church_id: DEMO_CHURCH_ID });
+    if (!churchId) return { data: null, error: new Error("Igreja não identificada") };
+    return createTransaction({ ...data, church_id: churchId });
   };
 
   const handleUpdateTransaction = async (data: CreateTransactionData) => {
@@ -181,6 +196,7 @@ export default function Financeiro() {
           <TabsList>
             <TabsTrigger value="overview">Visão Geral</TabsTrigger>
             <TabsTrigger value="transactions">Movimentações</TabsTrigger>
+            <TabsTrigger value="tithers">Dizimistas</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6 mt-6">
@@ -348,6 +364,79 @@ export default function Financeiro() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* Tithers Tab */}
+          <TabsContent value="tithers" className="space-y-6 mt-6">
+            {/* Tithers Stats */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="stat-card">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total Dizimistas</p>
+                    <p className="text-2xl font-bold mt-1">{titherStats.totalTithers}</p>
+                    <p className="text-xs mt-1 text-muted-foreground">Nos últimos 12 meses</p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-primary/10 text-primary">
+                    <Users className="w-5 h-5" />
+                  </div>
+                </div>
+              </div>
+              <div className="stat-card">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total em Dízimos</p>
+                    <p className="text-2xl font-bold mt-1">
+                      R$ {titherStats.totalAmount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                    </p>
+                    <p className="text-xs mt-1 text-success">Acumulado do ano</p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-success/10 text-success">
+                    <Heart className="w-5 h-5" />
+                  </div>
+                </div>
+              </div>
+              <div className="stat-card">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Média por Dizimista</p>
+                    <p className="text-2xl font-bold mt-1">
+                      R$ {titherStats.averagePerTither.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                    </p>
+                    <p className="text-xs mt-1 text-muted-foreground">Anual</p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-secondary/10 text-secondary">
+                    <Target className="w-5 h-5" />
+                  </div>
+                </div>
+              </div>
+              <div className="stat-card">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Dizimistas Regulares</p>
+                    <p className="text-2xl font-bold mt-1">{titherStats.regularTithers}</p>
+                    <p className="text-xs mt-1 text-muted-foreground">6+ meses de contribuição</p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-accent/10 text-accent-foreground">
+                    <TrendingUp className="w-5 h-5" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {loadingTithers ? (
+              <div className="flex items-center justify-center p-12">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              </div>
+            ) : (
+              <>
+                {/* Chart */}
+                <TithersChart data={monthlyTotals} />
+
+                {/* Table */}
+                <TithersTable tithers={tithers} months={months} />
+              </>
+            )}
+          </TabsContent>
         </Tabs>
       </div>
 
@@ -358,7 +447,7 @@ export default function Financeiro() {
         transaction={editingTransaction}
         categories={categories}
         defaultType={defaultTransactionType}
-        churchId={DEMO_CHURCH_ID}
+        churchId={churchId || ""}
         onSubmit={editingTransaction ? handleUpdateTransaction : handleCreateTransaction}
       />
 

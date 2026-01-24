@@ -366,6 +366,7 @@ export default function Configuracoes() {
         onOpenChange={setInviteModalOpen}
         onSubmit={createInvitation}
         getInviteLink={getInviteLink}
+        congregations={congregations}
       />
 
       {churchId && (
