@@ -17,6 +17,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -32,7 +33,9 @@ import type { CreateInvitationData, Invitation } from "@/hooks/useInvitations";
 
 const inviteSchema = z.object({
   email: z.string().email("Email inválido"),
+  full_name: z.string().optional(),
   role: z.enum(["tesoureiro", "secretario", "lider_celula", "lider_ministerio", "consolidacao", "membro"]),
+  congregation_id: z.string().optional(),
 });
 
 type InviteFormData = z.infer<typeof inviteSchema>;
@@ -46,14 +49,27 @@ const roleLabels: Record<string, string> = {
   membro: "Membro",
 };
 
+interface Congregation {
+  id: string;
+  name: string;
+  is_main: boolean;
+}
+
 interface InviteUserModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: CreateInvitationData) => Promise<{ data: Invitation | null; error: any }>;
   getInviteLink: (token: string) => string;
+  congregations?: Congregation[];
 }
 
-export function InviteUserModal({ open, onOpenChange, onSubmit, getInviteLink }: InviteUserModalProps) {
+export function InviteUserModal({ 
+  open, 
+  onOpenChange, 
+  onSubmit, 
+  getInviteLink,
+  congregations = [],
+}: InviteUserModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -62,7 +78,9 @@ export function InviteUserModal({ open, onOpenChange, onSubmit, getInviteLink }:
     resolver: zodResolver(inviteSchema),
     defaultValues: {
       email: "",
+      full_name: "",
       role: "membro",
+      congregation_id: "",
     },
   });
 
@@ -106,8 +124,8 @@ export function InviteUserModal({ open, onOpenChange, onSubmit, getInviteLink }:
           <DialogTitle>Convidar Novo Usuário</DialogTitle>
           <DialogDescription>
             {generatedLink 
-              ? "Copie o link e envie para o usuário se cadastrar."
-              : "Gere um link de convite com a função desejada."}
+              ? "Copie o link e envie para o usuário. Ele só precisará criar uma senha."
+              : "Gere um link de convite. O usuário só precisará criar uma senha para acessar."}
           </DialogDescription>
         </DialogHeader>
 
@@ -124,7 +142,7 @@ export function InviteUserModal({ open, onOpenChange, onSubmit, getInviteLink }:
               </Button>
             </div>
             <p className="text-sm text-muted-foreground">
-              Este link expira em 7 dias e só pode ser usado uma vez.
+              Este link expira em 7 dias e só pode ser usado uma vez. O usuário só precisará criar uma senha.
             </p>
             <DialogFooter>
               <Button onClick={() => handleClose(false)}>Fechar</Button>
@@ -138,7 +156,7 @@ export function InviteUserModal({ open, onOpenChange, onSubmit, getInviteLink }:
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email do convidado</FormLabel>
+                    <FormLabel>Email do convidado *</FormLabel>
                     <FormControl>
                       <Input 
                         type="email" 
@@ -146,6 +164,26 @@ export function InviteUserModal({ open, onOpenChange, onSubmit, getInviteLink }:
                         {...field} 
                       />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="full_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nome completo (opcional)</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="Nome do usuário" 
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Se preenchido, o nome será pré-preenchido no cadastro.
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -175,6 +213,41 @@ export function InviteUserModal({ open, onOpenChange, onSubmit, getInviteLink }:
                   </FormItem>
                 )}
               />
+
+              {congregations.length > 1 && (
+                <FormField
+                  control={form.control}
+                  name="congregation_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Filial (opcional)</FormLabel>
+                      <Select 
+                        onValueChange={(val) => field.onChange(val === "_all" ? "" : val)} 
+                        value={field.value || "_all"}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Todas as filiais" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="_all">Todas as filiais</SelectItem>
+                          {congregations.map((congregation) => (
+                            <SelectItem key={congregation.id} value={congregation.id}>
+                              {congregation.name}
+                              {congregation.is_main && " (Sede)"}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>
+                        Se selecionado, o usuário só terá acesso aos dados desta filial.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
 
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => handleClose(false)}>

@@ -35,19 +35,19 @@ export function useMinistrySchedules(ministryId?: string) {
   const { toast } = useToast();
 
   const fetchSchedules = async () => {
-    if (!ministryId) {
-      setSchedules([]);
-      setIsLoading(false);
-      return;
-    }
-
     try {
       setIsLoading(true);
-      const { data, error } = await supabase
+      let query = supabase
         .from("ministry_schedules")
         .select("*")
-        .eq("ministry_id", ministryId)
         .order("event_date", { ascending: true });
+
+      // If ministryId is provided, filter by it
+      if (ministryId) {
+        query = query.eq("ministry_id", ministryId);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       setSchedules(data || []);

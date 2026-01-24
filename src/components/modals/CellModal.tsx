@@ -129,9 +129,23 @@ export function CellModal({ open, onOpenChange, cell, members, onSubmit }: CellM
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Rede</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Ex: Rede Norte" {...field} />
-                  </FormControl>
+                  <Select 
+                    onValueChange={(val) => field.onChange(val === "_none" ? "" : val)} 
+                    value={field.value || "_none"}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione a rede" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="_none">Selecione a rede</SelectItem>
+                      <SelectItem value="homens">Homens</SelectItem>
+                      <SelectItem value="mulheres">Mulheres</SelectItem>
+                      <SelectItem value="jovens">Jovens</SelectItem>
+                      <SelectItem value="kids">Kids</SelectItem>
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
@@ -144,24 +158,22 @@ export function CellModal({ open, onOpenChange, cell, members, onSubmit }: CellM
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Líder</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select 
+                      onValueChange={(val) => field.onChange(val === "_none" ? "" : val)} 
+                      value={field.value || "_none"}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {leaderCandidates.length > 0 ? (
-                          leaderCandidates.map((member) => (
-                            <SelectItem key={member.id} value={member.id}>
-                              {member.full_name}
-                            </SelectItem>
-                          ))
-                        ) : (
-                          <SelectItem value="" disabled>
-                            Nenhum líder disponível
+                        <SelectItem value="_none">Sem líder definido</SelectItem>
+                        {leaderCandidates.map((member) => (
+                          <SelectItem key={member.id} value={member.id}>
+                            {member.full_name}
                           </SelectItem>
-                        )}
+                        ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -175,13 +187,17 @@ export function CellModal({ open, onOpenChange, cell, members, onSubmit }: CellM
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Supervisor</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select 
+                      onValueChange={(val) => field.onChange(val === "_none" ? "" : val)} 
+                      value={field.value || "_none"}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
+                        <SelectItem value="_none">Sem supervisor definido</SelectItem>
                         {leaderCandidates.map((member) => (
                           <SelectItem key={member.id} value={member.id}>
                             {member.full_name}
@@ -216,13 +232,17 @@ export function CellModal({ open, onOpenChange, cell, members, onSubmit }: CellM
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Dia da Semana</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select 
+                      onValueChange={(val) => field.onChange(val === "_none" ? "" : val)} 
+                      value={field.value || "_none"}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
+                        <SelectItem value="_none">Selecione o dia</SelectItem>
                         <SelectItem value="Segunda-feira">Segunda-feira</SelectItem>
                         <SelectItem value="Terça-feira">Terça-feira</SelectItem>
                         <SelectItem value="Quarta-feira">Quarta-feira</SelectItem>
