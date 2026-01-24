@@ -968,6 +968,7 @@ export type Database = {
         Row: {
           avatar_url: string | null
           church_id: string | null
+          congregation_id: string | null
           created_at: string
           email: string
           full_name: string
@@ -979,6 +980,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           church_id?: string | null
+          congregation_id?: string | null
           created_at?: string
           email: string
           full_name: string
@@ -990,6 +992,7 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           church_id?: string | null
+          congregation_id?: string | null
           created_at?: string
           email?: string
           full_name?: string
@@ -1004,6 +1007,13 @@ export type Database = {
             columns: ["church_id"]
             isOneToOne: false
             referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_congregation_id_fkey"
+            columns: ["congregation_id"]
+            isOneToOne: false
+            referencedRelation: "congregations"
             referencedColumns: ["id"]
           },
         ]
