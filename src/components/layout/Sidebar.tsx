@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -20,26 +20,60 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 
-const menuItems = [
+type AppRole = "pastor" | "tesoureiro" | "secretario" | "lider_celula" | "lider_ministerio" | "consolidacao" | "membro";
+
+interface MenuItem {
+  icon: typeof LayoutDashboard;
+  label: string;
+  path: string;
+  allowedRoles?: AppRole[]; // undefined = all roles can access
+}
+
+const allMenuItems: MenuItem[] = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/app" },
-  { icon: Users, label: "Secretaria", path: "/secretaria" },
-  { icon: Heart, label: "Ministérios", path: "/ministerios" },
-  { icon: Grid3X3, label: "Células", path: "/celulas" },
-  { icon: GraduationCap, label: "Ensino", path: "/ensino" },
-  { icon: DollarSign, label: "Financeiro", path: "/financeiro" },
-  { icon: Calendar, label: "Eventos", path: "/eventos" },
+  { icon: Users, label: "Secretaria", path: "/secretaria", allowedRoles: ["pastor", "secretario", "consolidacao"] },
+  { icon: Heart, label: "Ministérios", path: "/ministerios", allowedRoles: ["pastor", "lider_ministerio"] },
+  { icon: Grid3X3, label: "Células", path: "/celulas", allowedRoles: ["pastor", "lider_celula", "consolidacao"] },
+  { icon: GraduationCap, label: "Ensino", path: "/ensino", allowedRoles: ["pastor", "secretario"] },
+  { icon: DollarSign, label: "Financeiro", path: "/financeiro", allowedRoles: ["pastor", "tesoureiro"] },
+  { icon: Calendar, label: "Eventos", path: "/eventos", allowedRoles: ["pastor", "secretario", "lider_ministerio"] },
   { icon: User, label: "Meu App", path: "/meu-app" },
 ];
 
-const bottomItems = [
-  { icon: Settings, label: "Configurações", path: "/configuracoes" },
+const bottomItems: MenuItem[] = [
+  { icon: Settings, label: "Configurações", path: "/configuracoes", allowedRoles: ["pastor"] },
 ];
 
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { church, signOut } = useAuth();
+  const { church, signOut, roles, isAdmin } = useAuth();
+
+  // Filter menu items based on user roles
+  const menuItems = useMemo(() => {
+    if (isAdmin()) {
+      return allMenuItems; // Admin sees everything
+    }
+    
+    const userRoles = roles.map(r => r.role);
+    return allMenuItems.filter(item => {
+      if (!item.allowedRoles) return true; // No restriction
+      return item.allowedRoles.some(role => userRoles.includes(role));
+    });
+  }, [roles, isAdmin]);
+
+  const filteredBottomItems = useMemo(() => {
+    if (isAdmin()) {
+      return bottomItems;
+    }
+    
+    const userRoles = roles.map(r => r.role);
+    return bottomItems.filter(item => {
+      if (!item.allowedRoles) return true;
+      return item.allowedRoles.some(role => userRoles.includes(role));
+    });
+  }, [roles, isAdmin]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -116,7 +150,7 @@ export function Sidebar() {
 
       {/* Bottom Section */}
       <div className="px-3 pb-4 space-y-1 border-t border-sidebar-border pt-4">
-        {bottomItems.map((item) => {
+        {filteredBottomItems.map((item) => {
           const isActive = location.pathname === item.path;
           return (
             <Link

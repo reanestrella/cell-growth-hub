@@ -87,11 +87,20 @@ export function InviteUserModal({
   const handleSubmit = async (data: InviteFormData) => {
     setIsSubmitting(true);
     try {
-      const submitData: CreateInvitationData = {
+      const submitData: CreateInvitationData & { full_name?: string; congregation_id?: string } = {
         email: data.email,
         role: data.role,
       };
-      const result = await onSubmit(submitData);
+      
+      // Add optional fields
+      if (data.full_name && data.full_name.trim()) {
+        submitData.full_name = data.full_name.trim();
+      }
+      if (data.congregation_id && data.congregation_id !== "_all") {
+        submitData.congregation_id = data.congregation_id;
+      }
+      
+      const result = await onSubmit(submitData as CreateInvitationData);
       if (!result.error && result.data) {
         setGeneratedLink(getInviteLink(result.data.token));
       }
