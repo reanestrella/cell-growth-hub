@@ -81,49 +81,35 @@ export default function Registro() {
         return;
       }
 
-      // 2. Create church
-      const { data: churchData, error: churchError } = await supabase
-        .from("churches")
-        .insert([{ name: data.churchName }])
-        .select()
-        .single();
+      // 2. Setup church, profile and role atomically using RPC
+      const { data: setupResult, error: setupError } = await supabase.rpc('setup_new_church' as any, {
+        _church_name: data.churchName,
+        _full_name: data.fullName,
+        _email: data.email,
+      });
 
-      if (churchError) {
-        console.error("Error creating church:", churchError);
+      if (setupError) {
+        console.error("Error setting up church:", setupError);
         toast({
           title: "Aviso",
-          description: "Conta criada, mas houve erro ao criar a igreja. Entre em contato com o suporte.",
+          description: "Conta criada, mas houve erro ao configurar a igreja. Faça login e tente novamente.",
           variant: "destructive",
         });
         navigate("/login");
         return;
       }
 
-      // 3. Create profile
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .insert([{
-          user_id: authData.user.id,
-          church_id: churchData.id,
-          full_name: data.fullName,
-          email: data.email,
-        }]);
-
-      if (profileError) {
-        console.error("Error creating profile:", profileError);
-      }
-
-      // 4. Assign pastor role
-      const { error: roleError } = await supabase
-        .from("user_roles")
-        .insert([{
-          user_id: authData.user.id,
-          church_id: churchData.id,
-          role: "pastor",
-        }]);
-
-      if (roleError) {
-        console.error("Error assigning role:", roleError);
+      const result = setupResult as { success: boolean; error?: string; church_id?: string } | null;
+      
+      if (result && !result.success) {
+        console.error("Setup failed:", result.error);
+        toast({
+          title: "Aviso",
+          description: result.error || "Houve erro ao configurar a igreja.",
+          variant: "destructive",
+        });
+        navigate("/login");
+        return;
       }
 
       toast({
