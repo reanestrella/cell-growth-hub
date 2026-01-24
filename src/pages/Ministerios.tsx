@@ -15,6 +15,8 @@ import {
   Calendar,
   MoreHorizontal,
   Loader2,
+  Tv,
+  Church,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -26,22 +28,41 @@ import { useMinistries, CreateMinistryData } from "@/hooks/useMinistries";
 import { useMembers } from "@/hooks/useMembers";
 import { MinistryModal } from "@/components/modals/MinistryModal";
 import { DeleteConfirmModal } from "@/components/modals/DeleteConfirmModal";
+import { VolunteersModal } from "@/components/modals/VolunteersModal";
+import { ScheduleModal } from "@/components/modals/ScheduleModal";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Ministry } from "@/hooks/useMinistries";
 
 const iconMap: Record<string, any> = {
   music: Music,
+  louvor: Music,
   baby: Baby,
+  kids: Baby,
   handshake: Handshake,
+  diaconal: Handshake,
   heart: Heart,
   megaphone: Megaphone,
   users: Users,
+  tv: Tv,
+  midia: Tv,
+  church: Church,
+  ministerio: Church,
+};
+
+const getMinistryIcon = (name: string) => {
+  const lowerName = name.toLowerCase();
+  for (const [key, Icon] of Object.entries(iconMap)) {
+    if (lowerName.includes(key)) return Icon;
+  }
+  return Users;
 };
 
 export default function Ministerios() {
   const [ministryModalOpen, setMinistryModalOpen] = useState(false);
   const [editingMinistry, setEditingMinistry] = useState<Ministry | undefined>();
   const [deletingMinistry, setDeletingMinistry] = useState<Ministry | null>(null);
+  const [volunteersMinistry, setVolunteersMinistry] = useState<Ministry | null>(null);
+  const [scheduleMinistry, setScheduleMinistry] = useState<Ministry | null>(null);
   
   const { profile } = useAuth();
   const churchId = profile?.church_id;
@@ -149,53 +170,60 @@ export default function Ministerios() {
             </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {ministries.map((ministry) => (
-                <Card key={ministry.id} className="hover:shadow-md transition-shadow">
-                  <CardContent className="p-5">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="p-3 rounded-xl bg-primary/10 text-primary">
-                        <Music className="w-6 h-6" />
+              {ministries.map((ministry) => {
+                const IconComponent = getMinistryIcon(ministry.name);
+                return (
+                  <Card key={ministry.id} className="hover:shadow-md transition-shadow">
+                    <CardContent className="p-5">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="p-3 rounded-xl bg-primary/10 text-primary">
+                          <IconComponent className="w-6 h-6" />
+                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="-mr-2">
+                              <MoreHorizontal className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleOpenEdit(ministry)}>
+                              Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setScheduleMinistry(ministry)}>
+                              Gerenciar escala
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setVolunteersMinistry(ministry)}>
+                              Voluntários
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              className="text-destructive"
+                              onClick={() => setDeletingMinistry(ministry)}
+                            >
+                              Remover
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="-mr-2">
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleOpenEdit(ministry)}>
-                            Editar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>Gerenciar escala</DropdownMenuItem>
-                          <DropdownMenuItem>Voluntários</DropdownMenuItem>
-                          <DropdownMenuItem 
-                            className="text-destructive"
-                            onClick={() => setDeletingMinistry(ministry)}
-                          >
-                            Remover
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                    <h3 className="font-semibold text-lg mb-1">{ministry.name}</h3>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      {ministry.description || "Sem descrição"}
-                    </p>
-                    <div className="space-y-3 pt-3 border-t">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Líder:</span>
-                        <span className="font-medium">{getMemberName(ministry.leader_id)}</span>
+                      <h3 className="font-semibold text-lg mb-1">{ministry.name}</h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        {ministry.description || "Sem descrição"}
+                      </p>
+                      <div className="space-y-3 pt-3 border-t">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">Líder:</span>
+                          <span className="font-medium">{getMemberName(ministry.leader_id)}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">Status:</span>
+                          <Badge variant={ministry.is_active ? "default" : "secondary"}>
+                            {ministry.is_active ? "Ativo" : "Inativo"}
+                          </Badge>
+                        </div>
                       </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Status:</span>
-                        <Badge variant={ministry.is_active ? "default" : "secondary"}>
-                          {ministry.is_active ? "Ativo" : "Inativo"}
-                        </Badge>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           )}
         </div>
@@ -217,6 +245,23 @@ export default function Ministerios() {
         title="Excluir Ministério"
         description={`Tem certeza que deseja excluir "${deletingMinistry?.name}"? Esta ação não pode ser desfeita.`}
         onConfirm={() => deleteMinistry(deletingMinistry!.id)}
+      />
+
+      {/* Volunteers Modal */}
+      <VolunteersModal
+        open={!!volunteersMinistry}
+        onOpenChange={(open) => !open && setVolunteersMinistry(null)}
+        ministryId={volunteersMinistry?.id || ""}
+        ministryName={volunteersMinistry?.name || ""}
+        members={members}
+      />
+
+      {/* Schedule Modal */}
+      <ScheduleModal
+        open={!!scheduleMinistry}
+        onOpenChange={(open) => !open && setScheduleMinistry(null)}
+        ministryId={scheduleMinistry?.id || ""}
+        ministryName={scheduleMinistry?.name || ""}
       />
     </AppLayout>
   );
