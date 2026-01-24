@@ -35,6 +35,8 @@ interface InvitationData {
   role: string;
   church_id: string;
   token: string;
+  full_name: string | null;
+  congregation_id: string | null;
   churches: {
     name: string;
   };
@@ -91,7 +93,13 @@ export default function Convite() {
           return;
         }
 
-        setInvitation(data as unknown as InvitationData);
+        const invitationData = data as unknown as InvitationData;
+        setInvitation(invitationData);
+        
+        // Pre-fill name if provided in invitation
+        if (invitationData.full_name) {
+          form.setValue("full_name", invitationData.full_name);
+        }
       } catch (err) {
         setError("Erro ao carregar convite.");
       } finally {
@@ -100,7 +108,7 @@ export default function Convite() {
     };
 
     fetchInvitation();
-  }, [token]);
+  }, [token, form]);
 
   const handleSubmit = async (data: RegisterFormData) => {
     if (!invitation) return;
@@ -119,34 +127,14 @@ export default function Convite() {
       if (signUpError) throw signUpError;
       if (!authData.user) throw new Error("Erro ao criar conta");
 
-      // 2. Create profile
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .insert([{
-          user_id: authData.user.id,
-          email: invitation.email,
-          full_name: data.full_name,
-          church_id: invitation.church_id,
-        }]);
+      // 2. Use RPC to register (bypasses RLS) - creates profile, assigns role, marks invitation used
+      const { error: rpcError } = await supabase.rpc("register_invited_user", {
+        _invitation_token: invitation.token,
+        _user_id: authData.user.id,
+        _full_name: data.full_name,
+      });
 
-      if (profileError) throw profileError;
-
-      // 3. Assign role
-      const { error: roleError } = await supabase
-        .from("user_roles")
-        .insert([{
-          user_id: authData.user.id,
-          church_id: invitation.church_id,
-          role: invitation.role as any,
-        }]);
-
-      if (roleError) throw roleError;
-
-      // 4. Mark invitation as used
-      await (supabase
-        .from("invitations" as any)
-        .update({ used_at: new Date().toISOString() })
-        .eq("id", invitation.id) as any);
+      if (rpcError) throw rpcError;
 
       toast({
         title: "Conta criada com sucesso!",

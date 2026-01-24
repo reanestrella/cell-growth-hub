@@ -1,4 +1,5 @@
 import { Bell, Search, User, Menu } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -11,12 +12,39 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface HeaderProps {
   onMenuClick?: () => void;
 }
 
 export function Header({ onMenuClick }: HeaderProps) {
+  const navigate = useNavigate();
+  const { profile, church, signOut, roles } = useAuth();
+
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .slice(0, 2)
+      .join("")
+      .toUpperCase();
+  };
+
+  const getRoleLabel = () => {
+    if (roles.some((r) => r.role === "pastor")) return "Administrador";
+    if (roles.some((r) => r.role === "tesoureiro")) return "Tesoureiro(a)";
+    if (roles.some((r) => r.role === "secretario")) return "Secretário(a)";
+    if (roles.some((r) => r.role === "lider_celula")) return "Líder de Célula";
+    if (roles.some((r) => r.role === "lider_ministerio")) return "Líder de Ministério";
+    return "Membro";
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/login");
+  };
+
   return (
     <header className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b px-4 md:px-6 py-3">
       <div className="flex items-center justify-between gap-4">
@@ -79,28 +107,36 @@ export function Header({ onMenuClick }: HeaderProps) {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="flex items-center gap-2 px-2">
                 <Avatar className="w-8 h-8">
-                  <AvatarImage src="" />
+                  <AvatarImage src={profile?.avatar_url || ""} />
                   <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                    PS
+                    {profile?.full_name ? getInitials(profile.full_name) : "U"}
                   </AvatarFallback>
                 </Avatar>
                 <div className="hidden md:flex flex-col items-start">
-                  <span className="text-sm font-medium">Pastor Silva</span>
-                  <span className="text-xs text-muted-foreground">Administrador</span>
+                  <span className="text-sm font-medium">{profile?.full_name || "Usuário"}</span>
+                  <span className="text-xs text-muted-foreground">{getRoleLabel()}</span>
                 </div>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
+              <DropdownMenuLabel>
+                <div className="flex flex-col">
+                  <span>{profile?.full_name || "Minha Conta"}</span>
+                  {church && (
+                    <span className="text-xs font-normal text-muted-foreground">{church.name}</span>
+                  )}
+                </div>
+              </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/meu-app")}>
                 <User className="w-4 h-4 mr-2" />
                 Perfil
               </DropdownMenuItem>
-              <DropdownMenuItem>Configurações</DropdownMenuItem>
-              <DropdownMenuItem>Minha Igreja</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/configuracoes")}>
+                Configurações
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-destructive">
+              <DropdownMenuItem className="text-destructive" onClick={handleSignOut}>
                 Sair
               </DropdownMenuItem>
             </DropdownMenuContent>

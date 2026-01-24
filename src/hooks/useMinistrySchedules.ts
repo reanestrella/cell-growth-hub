@@ -2,6 +2,16 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
+export interface ScheduleVolunteerWithMember {
+  id: string;
+  confirmed: boolean | null;
+  role: string | null;
+  member: {
+    id: string;
+    full_name: string;
+  } | null;
+}
+
 export interface MinistrySchedule {
   id: string;
   ministry_id: string;
@@ -9,6 +19,7 @@ export interface MinistrySchedule {
   event_date: string;
   notes: string | null;
   created_at: string;
+  volunteers?: ScheduleVolunteerWithMember[];
 }
 
 export interface ScheduleVolunteer {
@@ -39,7 +50,15 @@ export function useMinistrySchedules(ministryId?: string) {
       setIsLoading(true);
       let query = supabase
         .from("ministry_schedules")
-        .select("*")
+        .select(`
+          *,
+          volunteers:schedule_volunteers(
+            id,
+            confirmed,
+            role,
+            member:members(id, full_name)
+          )
+        `)
         .order("event_date", { ascending: true });
 
       // If ministryId is provided, filter by it
