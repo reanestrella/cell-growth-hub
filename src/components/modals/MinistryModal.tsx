@@ -151,14 +151,14 @@ export function MinistryModal({ open, onOpenChange, ministry, members, onSubmit 
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Líder</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <Select onValueChange={(val) => field.onChange(val === "_none" ? "" : val)} value={field.value || "_none"}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione o líder" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">Sem líder definido</SelectItem>
+                      <SelectItem value="_none">Sem líder definido</SelectItem>
                       {leaderCandidates.map((member) => (
                         <SelectItem key={member.id} value={member.id}>
                           {member.full_name}
