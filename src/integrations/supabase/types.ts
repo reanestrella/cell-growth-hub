@@ -596,9 +596,11 @@ export type Database = {
       invitations: {
         Row: {
           church_id: string
+          congregation_id: string | null
           created_at: string
           email: string
           expires_at: string
+          full_name: string | null
           id: string
           invited_by: string
           role: Database["public"]["Enums"]["app_role"]
@@ -607,9 +609,11 @@ export type Database = {
         }
         Insert: {
           church_id: string
+          congregation_id?: string | null
           created_at?: string
           email: string
           expires_at?: string
+          full_name?: string | null
           id?: string
           invited_by: string
           role: Database["public"]["Enums"]["app_role"]
@@ -618,9 +622,11 @@ export type Database = {
         }
         Update: {
           church_id?: string
+          congregation_id?: string | null
           created_at?: string
           email?: string
           expires_at?: string
+          full_name?: string | null
           id?: string
           invited_by?: string
           role?: Database["public"]["Enums"]["app_role"]
@@ -633,6 +639,13 @@ export type Database = {
             columns: ["church_id"]
             isOneToOne: false
             referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invitations_congregation_id_fkey"
+            columns: ["congregation_id"]
+            isOneToOne: false
+            referencedRelation: "congregations"
             referencedColumns: ["id"]
           },
         ]
@@ -1131,6 +1144,14 @@ export type Database = {
       is_church_admin: {
         Args: { _church_id: string; _user_id: string }
         Returns: boolean
+      }
+      register_invited_user: {
+        Args: {
+          _full_name: string
+          _invitation_token: string
+          _user_id: string
+        }
+        Returns: undefined
       }
     }
     Enums: {

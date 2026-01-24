@@ -6,10 +6,16 @@ interface Profile {
   id: string;
   user_id: string;
   church_id: string | null;
+  congregation_id?: string | null;
   full_name: string;
   email: string;
   phone: string | null;
   avatar_url: string | null;
+}
+
+interface Church {
+  id: string;
+  name: string;
 }
 
 interface UserRole {
@@ -21,6 +27,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   profile: Profile | null;
+  church: Church | null;
   roles: UserRole[];
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
@@ -35,6 +42,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [church, setChurch] = useState<Church | null>(null);
   const [roles, setRoles] = useState<UserRole[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -52,6 +60,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }, 0);
         } else {
           setProfile(null);
+          setChurch(null);
           setRoles([]);
         }
         
@@ -85,6 +94,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (profileData) {
         setProfile(profileData as Profile);
+        
+        // Fetch church info if profile has church_id
+        if (profileData.church_id) {
+          const { data: churchData } = await supabase
+            .from("churches")
+            .select("id, name")
+            .eq("id", profileData.church_id)
+            .single();
+          
+          if (churchData) {
+            setChurch(churchData as Church);
+          }
+        }
       }
 
       // Fetch roles
@@ -112,6 +134,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     await supabase.auth.signOut();
     setProfile(null);
+    setChurch(null);
     setRoles([]);
   };
 
@@ -129,6 +152,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         session,
         profile,
+        church,
         roles,
         isLoading,
         signIn,

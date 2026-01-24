@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Users,
@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/app" },
@@ -37,6 +38,13 @@ const bottomItems = [
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { church, signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/login");
+  };
 
   return (
     <aside
@@ -53,7 +61,9 @@ export function Sidebar() {
           </div>
           {!collapsed && (
             <div className="flex flex-col">
-              <span className="font-bold text-sidebar-foreground text-lg">Igreja</span>
+              <span className="font-bold text-sidebar-foreground text-lg truncate max-w-[140px]">
+                {church?.name || "Igreja"}
+              </span>
               <span className="text-xs text-sidebar-foreground/60">Gestão Completa</span>
             </div>
           )}
@@ -124,6 +134,7 @@ export function Sidebar() {
           );
         })}
         <button
+          onClick={handleSignOut}
           className={cn(
             "nav-item w-full text-destructive/80 hover:text-destructive hover:bg-destructive/10",
             collapsed && "justify-center px-3"
