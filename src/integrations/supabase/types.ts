@@ -973,6 +973,7 @@ export type Database = {
           email: string
           full_name: string
           id: string
+          member_id: string | null
           phone: string | null
           updated_at: string
           user_id: string
@@ -985,6 +986,7 @@ export type Database = {
           email: string
           full_name: string
           id?: string
+          member_id?: string | null
           phone?: string | null
           updated_at?: string
           user_id: string
@@ -997,6 +999,7 @@ export type Database = {
           email?: string
           full_name?: string
           id?: string
+          member_id?: string | null
           phone?: string | null
           updated_at?: string
           user_id?: string
@@ -1014,6 +1017,13 @@ export type Database = {
             columns: ["congregation_id"]
             isOneToOne: false
             referencedRelation: "congregations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
             referencedColumns: ["id"]
           },
         ]
@@ -1143,6 +1153,7 @@ export type Database = {
     }
     Functions: {
       get_user_church_id: { Args: { _user_id: string }; Returns: string }
+      get_user_member_id: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
           _church_id: string
