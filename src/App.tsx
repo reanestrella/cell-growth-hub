@@ -17,6 +17,7 @@ import Financeiro from "./pages/Financeiro";
 import Eventos from "./pages/Eventos";
 import MeuApp from "./pages/MeuApp";
 import Configuracoes from "./pages/Configuracoes";
+import Instalar from "./pages/Instalar";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +35,7 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/registro" element={<Registro />} />
             <Route path="/convite/:token" element={<Convite />} />
+            <Route path="/instalar" element={<Instalar />} />
             
             {/* App Routes */}
             <Route path="/app" element={<Dashboard />} />
