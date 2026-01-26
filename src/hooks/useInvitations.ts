@@ -18,6 +18,9 @@ export interface Invitation {
 export interface CreateInvitationData {
   email: string;
   role: Invitation["role"];
+  full_name?: string;
+  congregation_id?: string;
+  member_id?: string;
 }
 
 export function useInvitations() {
@@ -66,11 +69,14 @@ export function useInvitations() {
       };
       
       // Add optional fields if provided
-      if ((data as any).full_name) {
-        invitationData.full_name = (data as any).full_name;
+      if (data.full_name) {
+        invitationData.full_name = data.full_name;
       }
-      if ((data as any).congregation_id && (data as any).congregation_id !== "_all") {
-        invitationData.congregation_id = (data as any).congregation_id;
+      if (data.congregation_id && data.congregation_id !== "_all") {
+        invitationData.congregation_id = data.congregation_id;
+      }
+      if (data.member_id) {
+        invitationData.member_id = data.member_id;
       }
 
       const { data: newInvitation, error } = await (supabase

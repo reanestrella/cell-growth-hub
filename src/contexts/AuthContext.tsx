@@ -7,6 +7,7 @@ interface Profile {
   user_id: string;
   church_id: string | null;
   congregation_id?: string | null;
+  member_id?: string | null;
   full_name: string;
   email: string;
   phone: string | null;

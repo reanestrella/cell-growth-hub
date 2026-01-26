@@ -367,6 +367,7 @@ export default function Configuracoes() {
         onSubmit={createInvitation}
         getInviteLink={getInviteLink}
         congregations={congregations}
+        churchId={churchId || undefined}
       />
 
       {churchId && (
