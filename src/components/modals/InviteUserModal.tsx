@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -30,12 +30,14 @@ import {
 } from "@/components/ui/select";
 import { Loader2, Copy, Check } from "lucide-react";
 import type { CreateInvitationData, Invitation } from "@/hooks/useInvitations";
+import { MemberAutocomplete } from "@/components/ui/member-autocomplete";
 
 const inviteSchema = z.object({
   email: z.string().email("Email inválido"),
   full_name: z.string().optional(),
   role: z.enum(["tesoureiro", "secretario", "lider_celula", "lider_ministerio", "consolidacao", "membro"]),
   congregation_id: z.string().optional(),
+  member_id: z.string().optional(),
 });
 
 type InviteFormData = z.infer<typeof inviteSchema>;
@@ -61,6 +63,7 @@ interface InviteUserModalProps {
   onSubmit: (data: CreateInvitationData) => Promise<{ data: Invitation | null; error: any }>;
   getInviteLink: (token: string) => string;
   congregations?: Congregation[];
+  churchId?: string;
 }
 
 export function InviteUserModal({ 
@@ -69,6 +72,7 @@ export function InviteUserModal({
   onSubmit, 
   getInviteLink,
   congregations = [],
+  churchId,
 }: InviteUserModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
@@ -81,13 +85,17 @@ export function InviteUserModal({
       full_name: "",
       role: "membro",
       congregation_id: "",
+      member_id: "",
     },
   });
+
+  const selectedRole = form.watch("role");
+  const needsMemberLink = selectedRole === "lider_celula" || selectedRole === "lider_ministerio";
 
   const handleSubmit = async (data: InviteFormData) => {
     setIsSubmitting(true);
     try {
-      const submitData: CreateInvitationData & { full_name?: string; congregation_id?: string } = {
+      const submitData: CreateInvitationData = {
         email: data.email,
         role: data.role,
       };
@@ -99,8 +107,11 @@ export function InviteUserModal({
       if (data.congregation_id && data.congregation_id !== "_all") {
         submitData.congregation_id = data.congregation_id;
       }
+      if (data.member_id && needsMemberLink) {
+        submitData.member_id = data.member_id;
+      }
       
-      const result = await onSubmit(submitData as CreateInvitationData);
+      const result = await onSubmit(submitData);
       if (!result.error && result.data) {
         setGeneratedLink(getInviteLink(result.data.token));
       }
@@ -222,6 +233,32 @@ export function InviteUserModal({
                   </FormItem>
                 )}
               />
+
+              {needsMemberLink && churchId && (
+                <FormField
+                  control={form.control}
+                  name="member_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Vincular ao Membro *</FormLabel>
+                      <FormControl>
+                        <MemberAutocomplete
+                          churchId={churchId}
+                          value={field.value}
+                          onChange={(id) => field.onChange(id || "")}
+                          placeholder="Buscar membro cadastrado..."
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        {selectedRole === "lider_celula" 
+                          ? "O líder só terá acesso à célula que lidera."
+                          : "O líder só terá acesso ao ministério que lidera."}
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
 
               {congregations.length > 1 && (
                 <FormField

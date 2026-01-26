@@ -603,6 +603,7 @@ export type Database = {
           full_name: string | null
           id: string
           invited_by: string
+          member_id: string | null
           role: Database["public"]["Enums"]["app_role"]
           token: string
           used_at: string | null
@@ -616,6 +617,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           invited_by: string
+          member_id?: string | null
           role: Database["public"]["Enums"]["app_role"]
           token?: string
           used_at?: string | null
@@ -629,6 +631,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           invited_by?: string
+          member_id?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           token?: string
           used_at?: string | null
@@ -646,6 +649,13 @@ export type Database = {
             columns: ["congregation_id"]
             isOneToOne: false
             referencedRelation: "congregations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invitations_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
             referencedColumns: ["id"]
           },
         ]
