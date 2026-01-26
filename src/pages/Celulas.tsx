@@ -2,8 +2,8 @@ import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Plus,
   Grid3X3,
@@ -16,6 +16,8 @@ import {
   MoreHorizontal,
   FileText,
   Loader2,
+  UserPlus,
+  BarChart3,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -26,7 +28,9 @@ import {
 import { useCells, CreateCellData, CreateCellReportData } from "@/hooks/useCells";
 import { useMembers } from "@/hooks/useMembers";
 import { CellModal } from "@/components/modals/CellModal";
-import { CellReportModal } from "@/components/modals/CellReportModal";
+import { CellReportWithAttendanceModal } from "@/components/modals/CellReportWithAttendanceModal";
+import { CellMembersModal } from "@/components/modals/CellMembersModal";
+import { CellReportsOverview } from "@/components/cells/CellReportsOverview";
 import { DeleteConfirmModal } from "@/components/modals/DeleteConfirmModal";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Cell } from "@/hooks/useCells";
@@ -39,15 +43,18 @@ const statusConfig = {
 };
 
 export default function Celulas() {
+  const [activeTab, setActiveTab] = useState("cells");
   const [cellModalOpen, setCellModalOpen] = useState(false);
   const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [membersModalOpen, setMembersModalOpen] = useState(false);
   const [editingCell, setEditingCell] = useState<Cell | undefined>();
   const [deletingCell, setDeletingCell] = useState<Cell | null>(null);
+  const [selectedCell, setSelectedCell] = useState<Cell | null>(null);
   const [selectedCellId, setSelectedCellId] = useState<string | undefined>();
 
   const { profile } = useAuth();
   const churchId = profile?.church_id;
-  const { cells, reports, isLoading, createCell, updateCell, deleteCell, createReport } = useCells(churchId || undefined);
+  const { cells, reports, isLoading, createCell, updateCell, deleteCell, createReport, fetchReports } = useCells(churchId || undefined);
   const { members } = useMembers(churchId || undefined);
 
   // Get member name by ID
@@ -79,6 +86,11 @@ export default function Celulas() {
     setCellModalOpen(true);
   };
 
+  const handleOpenMembers = (cell: Cell) => {
+    setSelectedCell(cell);
+    setMembersModalOpen(true);
+  };
+
   const handleCloseCellModal = (open: boolean) => {
     setCellModalOpen(open);
     if (!open) {
@@ -102,7 +114,11 @@ export default function Celulas() {
   };
 
   const handleCreateReport = async (data: CreateCellReportData) => {
-    return createReport(data);
+    const result = await createReport(data);
+    if (!result.error) {
+      fetchReports(); // Refresh reports after creating
+    }
+    return result;
   };
 
   // Get cell status based on members and activity
@@ -158,140 +174,169 @@ export default function Celulas() {
           ))}
         </div>
 
-        {/* Cells Grid */}
-        {isLoading ? (
-          <div className="flex items-center justify-center p-12">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          </div>
-        ) : cells.length === 0 ? (
-          <div className="card-elevated flex flex-col items-center justify-center p-12 text-center">
-            <Grid3X3 className="w-12 h-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium">Nenhuma célula cadastrada</h3>
-            <p className="text-muted-foreground mb-4">
-              Comece criando a primeira célula da sua igreja.
-            </p>
-            <Button onClick={handleOpenNewCell}>
-              <Plus className="w-4 h-4 mr-2" />
-              Criar Célula
-            </Button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {cells.map((cell) => {
-              const status = getCellStatus(cell);
-              const leaderName = getMemberName(cell.leader_id);
-              const supervisorName = getMemberName(cell.supervisor_id);
-              
-              return (
-                <div
-                  key={cell.id}
-                  className="card-elevated p-5 hover:shadow-lg transition-all duration-300 animate-fade-in"
-                >
-                  {/* Header */}
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold text-lg">{cell.name}</h3>
-                        <Badge
-                          variant="secondary"
-                          className={statusConfig[status]?.color}
-                        >
-                          {statusConfig[status]?.label}
-                        </Badge>
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList>
+            <TabsTrigger value="cells" className="flex items-center gap-2">
+              <Grid3X3 className="w-4 h-4" />
+              Células
+            </TabsTrigger>
+            <TabsTrigger value="reports" className="flex items-center gap-2">
+              <BarChart3 className="w-4 h-4" />
+              Visão Geral
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Cells Tab */}
+          <TabsContent value="cells" className="mt-6">
+            {isLoading ? (
+              <div className="flex items-center justify-center p-12">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              </div>
+            ) : cells.length === 0 ? (
+              <div className="card-elevated flex flex-col items-center justify-center p-12 text-center">
+                <Grid3X3 className="w-12 h-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium">Nenhuma célula cadastrada</h3>
+                <p className="text-muted-foreground mb-4">
+                  Comece criando a primeira célula da sua igreja.
+                </p>
+                <Button onClick={handleOpenNewCell}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Criar Célula
+                </Button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {cells.map((cell) => {
+                  const status = getCellStatus(cell);
+                  const leaderName = getMemberName(cell.leader_id);
+                  const supervisorName = getMemberName(cell.supervisor_id);
+                  
+                  return (
+                    <div
+                      key={cell.id}
+                      className="card-elevated p-5 hover:shadow-lg transition-all duration-300 animate-fade-in"
+                    >
+                      {/* Header */}
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-semibold text-lg">{cell.name}</h3>
+                            <Badge
+                              variant="secondary"
+                              className={statusConfig[status]?.color}
+                            >
+                              {statusConfig[status]?.label}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground">{cell.network || "Sem rede"}</p>
+                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="-mr-2">
+                              <MoreHorizontal className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleOpenMembers(cell)}>
+                              <UserPlus className="w-4 h-4 mr-2" />
+                              Gerenciar membros
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleOpenReport(cell.id)}>
+                              <FileText className="w-4 h-4 mr-2" />
+                              Enviar relatório
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleOpenEditCell(cell)}>
+                              Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              className="text-destructive"
+                              onClick={() => setDeletingCell(cell)}
+                            >
+                              Excluir
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
-                      <p className="text-sm text-muted-foreground">{cell.network || "Sem rede"}</p>
-                    </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="-mr-2">
-                          <MoreHorizontal className="w-4 h-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleOpenReport(cell.id)}>
-                          Enviar relatório
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleOpenEditCell(cell)}>
-                          Editar
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>Ver detalhes</DropdownMenuItem>
-                        <DropdownMenuItem 
-                          className="text-destructive"
-                          onClick={() => setDeletingCell(cell)}
-                        >
-                          Excluir
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
 
-                  {/* Leader */}
-                  <div className="flex items-center gap-3 mb-4 p-3 rounded-lg bg-muted/50">
-                    <Avatar className="w-10 h-10">
-                      <AvatarImage src="" />
-                      <AvatarFallback className="bg-primary text-primary-foreground">
-                        {leaderName?.split(" ").map((n) => n[0]).join("").slice(0, 2) || "?"}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-medium text-sm">{leaderName || "Sem líder"}</p>
-                      <p className="text-xs text-muted-foreground">
-                        Supervisor: {supervisorName || "Não definido"}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Info */}
-                  <div className="space-y-2 mb-4">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <MapPin className="w-4 h-4" />
-                      <span className="truncate">{cell.address || "Local não definido"}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Calendar className="w-4 h-4" />
-                      <span>{cell.day_of_week || "Dia não definido"}</span>
-                      {cell.time && (
-                        <>
-                          <Clock className="w-4 h-4 ml-2" />
-                          <span>{cell.time}</span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Stats Row */}
-                  {(() => {
-                    const cellReports = reports.filter((r) => r.cell_id === cell.id);
-                    const lastReport = cellReports[0];
-                    
-                    return (
-                      <div className="grid grid-cols-3 gap-2 pt-4 border-t">
-                        <div className="text-center">
-                          <p className="text-lg font-bold text-success">
-                            {lastReport?.attendance || 0}
+                      {/* Leader */}
+                      <div className="flex items-center gap-3 mb-4 p-3 rounded-lg bg-muted/50">
+                        <Avatar className="w-10 h-10">
+                          <AvatarImage src="" />
+                          <AvatarFallback className="bg-primary text-primary-foreground">
+                            {leaderName?.split(" ").map((n) => n[0]).join("").slice(0, 2) || "?"}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium text-sm">{leaderName || "Sem líder"}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Supervisor: {supervisorName || "Não definido"}
                           </p>
-                          <p className="text-xs text-muted-foreground">Presença</p>
-                        </div>
-                        <div className="text-center border-x">
-                          <p className="text-lg font-bold text-secondary">
-                            {lastReport?.visitors || 0}
-                          </p>
-                          <p className="text-xs text-muted-foreground">Visitantes</p>
-                        </div>
-                        <div className="text-center">
-                          <p className="text-lg font-bold text-info">
-                            {lastReport?.conversions || 0}
-                          </p>
-                          <p className="text-xs text-muted-foreground">Decisões</p>
                         </div>
                       </div>
-                    );
-                  })()}
-                </div>
-              );
-            })}
-          </div>
-        )}
+
+                      {/* Info */}
+                      <div className="space-y-2 mb-4">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <MapPin className="w-4 h-4" />
+                          <span className="truncate">{cell.address || "Local não definido"}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Calendar className="w-4 h-4" />
+                          <span>{cell.day_of_week || "Dia não definido"}</span>
+                          {cell.time && (
+                            <>
+                              <Clock className="w-4 h-4 ml-2" />
+                              <span>{cell.time}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Stats Row */}
+                      {(() => {
+                        const cellReports = reports.filter((r) => r.cell_id === cell.id);
+                        const lastReport = cellReports[0];
+                        
+                        return (
+                          <div className="grid grid-cols-3 gap-2 pt-4 border-t">
+                            <div className="text-center">
+                              <p className="text-lg font-bold text-success">
+                                {lastReport?.attendance || 0}
+                              </p>
+                              <p className="text-xs text-muted-foreground">Presença</p>
+                            </div>
+                            <div className="text-center border-x">
+                              <p className="text-lg font-bold text-secondary">
+                                {lastReport?.visitors || 0}
+                              </p>
+                              <p className="text-xs text-muted-foreground">Visitantes</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-lg font-bold text-info">
+                                {lastReport?.conversions || 0}
+                              </p>
+                              <p className="text-xs text-muted-foreground">Decisões</p>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Reports Overview Tab */}
+          <TabsContent value="reports" className="mt-6">
+            <CellReportsOverview
+              cells={cells}
+              reports={reports}
+              getMemberName={getMemberName}
+            />
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Cell Modal */}
@@ -303,14 +348,24 @@ export default function Celulas() {
         onSubmit={editingCell ? handleUpdateCell : handleCreateCell}
       />
 
-      {/* Cell Report Modal */}
-      <CellReportModal
+      {/* Cell Report Modal with Attendance */}
+      <CellReportWithAttendanceModal
         open={reportModalOpen}
         onOpenChange={setReportModalOpen}
         cells={cells}
         defaultCellId={selectedCellId}
         onSubmit={handleCreateReport}
       />
+
+      {/* Cell Members Modal */}
+      {selectedCell && (
+        <CellMembersModal
+          open={membersModalOpen}
+          onOpenChange={setMembersModalOpen}
+          cell={selectedCell}
+          churchMembers={members}
+        />
+      )}
 
       {/* Delete Confirmation */}
       <DeleteConfirmModal

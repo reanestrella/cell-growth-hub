@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -70,17 +70,48 @@ export function TransactionModal({
   const form = useForm<TransactionFormData>({
     resolver: zodResolver(transactionSchema),
     defaultValues: {
-      type: transaction?.type || defaultType,
-      amount: transaction?.amount?.toString() || "",
-      description: transaction?.description || "",
-      transaction_date: transaction?.transaction_date || new Date().toISOString().split("T")[0],
-      category_id: transaction?.category_id || "",
-      member_id: transaction?.member_id || "",
-      payment_method: transaction?.payment_method || "",
-      reference_number: transaction?.reference_number || "",
-      notes: transaction?.notes || "",
+      type: defaultType,
+      amount: "",
+      description: "",
+      transaction_date: new Date().toISOString().split("T")[0],
+      category_id: "",
+      member_id: "",
+      payment_method: "",
+      reference_number: "",
+      notes: "",
     },
   });
+
+  // Reset form when modal opens with transaction data (for editing)
+  useEffect(() => {
+    if (open) {
+      if (transaction) {
+        form.reset({
+          type: transaction.type,
+          amount: transaction.amount?.toString() || "",
+          description: transaction.description || "",
+          transaction_date: transaction.transaction_date || new Date().toISOString().split("T")[0],
+          category_id: transaction.category_id || "",
+          member_id: transaction.member_id || "",
+          payment_method: transaction.payment_method || "",
+          reference_number: transaction.reference_number || "",
+          notes: transaction.notes || "",
+        });
+      } else {
+        form.reset({
+          type: defaultType,
+          amount: "",
+          description: "",
+          transaction_date: new Date().toISOString().split("T")[0],
+          category_id: "",
+          member_id: "",
+          payment_method: "",
+          reference_number: "",
+          notes: "",
+        });
+      }
+    }
+  }, [open, transaction, defaultType]);
 
   const selectedType = form.watch("type");
   const filteredCategories = categories.filter((c) => c.type === selectedType);

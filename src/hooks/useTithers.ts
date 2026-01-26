@@ -55,13 +55,17 @@ export function useTithers(churchId?: string) {
         (tx: any) => tx.category?.name === "Dízimo"
       );
 
-      // Transform data
-      const transformed: TitherData[] = tithes.map((tx: any) => ({
-        member_id: tx.member_id,
-        member_name: tx.member?.full_name || "Membro desconhecido",
-        month: format(new Date(tx.transaction_date), "yyyy-MM"),
-        total: Number(tx.amount),
-      }));
+      // Transform data - parse date as local to avoid timezone issues
+      const transformed: TitherData[] = tithes.map((tx: any) => {
+        // Parse date as local (YYYY-MM-DD format)
+        const [year, month] = tx.transaction_date.split('-');
+        return {
+          member_id: tx.member_id,
+          member_name: tx.member?.full_name || "Membro desconhecido",
+          month: `${year}-${month}`,
+          total: Number(tx.amount),
+        };
+      });
 
       setRawData(transformed);
     } catch (error) {
