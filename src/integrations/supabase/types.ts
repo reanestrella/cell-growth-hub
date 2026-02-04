@@ -58,6 +58,67 @@ export type Database = {
           },
         ]
       }
+      cell_leadership_development: {
+        Row: {
+          cell_id: string
+          church_id: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+          identified_at: string | null
+          member_id: string
+          notes: string | null
+          potential_level: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          cell_id: string
+          church_id: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          identified_at?: string | null
+          member_id: string
+          notes?: string | null
+          potential_level?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          cell_id?: string
+          church_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          identified_at?: string | null
+          member_id?: string
+          notes?: string | null
+          potential_level?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cell_leadership_development_cell_id_fkey"
+            columns: ["cell_id"]
+            isOneToOne: false
+            referencedRelation: "cells"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cell_leadership_development_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cell_leadership_development_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cell_members: {
         Row: {
           cell_id: string
@@ -87,6 +148,128 @@ export type Database = {
           },
           {
             foreignKeyName: "cell_members_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cell_pastoral_care: {
+        Row: {
+          care_date: string | null
+          care_type: string
+          cell_id: string
+          church_id: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+          member_id: string
+          notes: string | null
+        }
+        Insert: {
+          care_date?: string | null
+          care_type: string
+          cell_id: string
+          church_id: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          member_id: string
+          notes?: string | null
+        }
+        Update: {
+          care_date?: string | null
+          care_type?: string
+          cell_id?: string
+          church_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          member_id?: string
+          notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cell_pastoral_care_cell_id_fkey"
+            columns: ["cell_id"]
+            isOneToOne: false
+            referencedRelation: "cells"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cell_pastoral_care_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cell_pastoral_care_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cell_prayer_requests: {
+        Row: {
+          answered_at: string | null
+          cell_id: string
+          church_id: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          is_answered: boolean | null
+          leader_notes: string | null
+          member_id: string | null
+          request: string
+          updated_at: string | null
+        }
+        Insert: {
+          answered_at?: string | null
+          cell_id: string
+          church_id: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_answered?: boolean | null
+          leader_notes?: string | null
+          member_id?: string | null
+          request: string
+          updated_at?: string | null
+        }
+        Update: {
+          answered_at?: string | null
+          cell_id?: string
+          church_id?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_answered?: boolean | null
+          leader_notes?: string | null
+          member_id?: string | null
+          request?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cell_prayer_requests_cell_id_fkey"
+            columns: ["cell_id"]
+            isOneToOne: false
+            referencedRelation: "cells"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cell_prayer_requests_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cell_prayer_requests_member_id_fkey"
             columns: ["member_id"]
             isOneToOne: false
             referencedRelation: "members"
@@ -137,6 +320,76 @@ export type Database = {
             columns: ["cell_id"]
             isOneToOne: false
             referencedRelation: "cells"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cell_visitors: {
+        Row: {
+          accepted_christ: boolean | null
+          cell_id: string
+          church_id: string
+          created_at: string | null
+          email: string | null
+          follow_up_status: string | null
+          full_name: string
+          id: string
+          invited_by: string | null
+          notes: string | null
+          phone: string | null
+          updated_at: string | null
+          visit_date: string
+        }
+        Insert: {
+          accepted_christ?: boolean | null
+          cell_id: string
+          church_id: string
+          created_at?: string | null
+          email?: string | null
+          follow_up_status?: string | null
+          full_name: string
+          id?: string
+          invited_by?: string | null
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string | null
+          visit_date?: string
+        }
+        Update: {
+          accepted_christ?: boolean | null
+          cell_id?: string
+          church_id?: string
+          created_at?: string | null
+          email?: string | null
+          follow_up_status?: string | null
+          full_name?: string
+          id?: string
+          invited_by?: string | null
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string | null
+          visit_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cell_visitors_cell_id_fkey"
+            columns: ["cell_id"]
+            isOneToOne: false
+            referencedRelation: "cells"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cell_visitors_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cell_visitors_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "members"
             referencedColumns: ["id"]
           },
         ]
@@ -299,6 +552,73 @@ export type Database = {
             columns: ["church_id"]
             isOneToOne: false
             referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      consolidation_records: {
+        Row: {
+          cell_integration_date: string | null
+          church_id: string
+          consolidator_id: string | null
+          contact_date: string | null
+          created_at: string | null
+          created_by: string | null
+          first_visit_date: string | null
+          id: string
+          member_id: string
+          notes: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          cell_integration_date?: string | null
+          church_id: string
+          consolidator_id?: string | null
+          contact_date?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          first_visit_date?: string | null
+          id?: string
+          member_id: string
+          notes?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          cell_integration_date?: string | null
+          church_id?: string
+          consolidator_id?: string | null
+          contact_date?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          first_visit_date?: string | null
+          id?: string
+          member_id?: string
+          notes?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consolidation_records_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "consolidation_records_consolidator_id_fkey"
+            columns: ["consolidator_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "consolidation_records_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
             referencedColumns: ["id"]
           },
         ]
@@ -488,6 +808,116 @@ export type Database = {
           },
         ]
       }
+      financial_accounts: {
+        Row: {
+          account_type: string
+          bank_name: string | null
+          church_id: string
+          created_at: string | null
+          current_balance: number | null
+          id: string
+          initial_balance: number | null
+          is_active: boolean | null
+          ministry_id: string | null
+          name: string
+          network: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          account_type: string
+          bank_name?: string | null
+          church_id: string
+          created_at?: string | null
+          current_balance?: number | null
+          id?: string
+          initial_balance?: number | null
+          is_active?: boolean | null
+          ministry_id?: string | null
+          name: string
+          network?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          account_type?: string
+          bank_name?: string | null
+          church_id?: string
+          created_at?: string | null
+          current_balance?: number | null
+          id?: string
+          initial_balance?: number | null
+          is_active?: boolean | null
+          ministry_id?: string | null
+          name?: string
+          network?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_accounts_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_accounts_ministry_id_fkey"
+            columns: ["ministry_id"]
+            isOneToOne: false
+            referencedRelation: "ministries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financial_campaigns: {
+        Row: {
+          church_id: string
+          created_at: string | null
+          current_amount: number | null
+          description: string | null
+          end_date: string | null
+          goal_amount: number | null
+          id: string
+          is_active: boolean | null
+          name: string
+          start_date: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          church_id: string
+          created_at?: string | null
+          current_amount?: number | null
+          description?: string | null
+          end_date?: string | null
+          goal_amount?: number | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          start_date?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          church_id?: string
+          created_at?: string | null
+          current_amount?: number | null
+          description?: string | null
+          end_date?: string | null
+          goal_amount?: number | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          start_date?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_campaigns_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       financial_categories: {
         Row: {
           church_id: string
@@ -525,7 +955,9 @@ export type Database = {
       }
       financial_transactions: {
         Row: {
+          account_id: string | null
           amount: number
+          campaign_id: string | null
           category_id: string | null
           church_id: string
           created_at: string
@@ -540,7 +972,9 @@ export type Database = {
           type: string
         }
         Insert: {
+          account_id?: string | null
           amount: number
+          campaign_id?: string | null
           category_id?: string | null
           church_id: string
           created_at?: string
@@ -555,7 +989,9 @@ export type Database = {
           type: string
         }
         Update: {
+          account_id?: string | null
           amount?: number
+          campaign_id?: string | null
           category_id?: string | null
           church_id?: string
           created_at?: string
@@ -570,6 +1006,20 @@ export type Database = {
           type?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "financial_transactions_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_transactions_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "financial_campaigns"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "financial_transactions_category_id_fkey"
             columns: ["category_id"]

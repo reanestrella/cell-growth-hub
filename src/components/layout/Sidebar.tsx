@@ -15,6 +15,7 @@ import {
   Church,
   LogOut,
   Crown,
+  Handshake,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -34,6 +35,7 @@ const allMenuItems: MenuItem[] = [
   { icon: Users, label: "Secretaria", path: "/secretaria", allowedRoles: ["pastor", "secretario", "consolidacao"] },
   { icon: Heart, label: "Ministérios", path: "/ministerios", allowedRoles: ["pastor", "lider_ministerio"] },
   { icon: Grid3X3, label: "Células", path: "/celulas", allowedRoles: ["pastor", "lider_celula", "consolidacao"] },
+  { icon: Handshake, label: "Consolidação", path: "/consolidacao", allowedRoles: ["pastor", "consolidacao"] },
   { icon: GraduationCap, label: "Ensino", path: "/ensino", allowedRoles: ["pastor", "secretario"] },
   { icon: DollarSign, label: "Financeiro", path: "/financeiro", allowedRoles: ["pastor", "tesoureiro"] },
   { icon: Calendar, label: "Eventos", path: "/eventos", allowedRoles: ["pastor", "secretario", "lider_ministerio"] },
