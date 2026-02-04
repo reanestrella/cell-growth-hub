@@ -18,6 +18,7 @@ import {
   Loader2,
   UserPlus,
   BarChart3,
+  Sparkles,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -31,6 +32,7 @@ import { CellModal } from "@/components/modals/CellModal";
 import { CellReportWithAttendanceModal } from "@/components/modals/CellReportWithAttendanceModal";
 import { CellMembersModal } from "@/components/modals/CellMembersModal";
 import { CellReportsOverview } from "@/components/cells/CellReportsOverview";
+import { CellLeaderPillars } from "@/components/cells/CellLeaderPillars";
 import { DeleteConfirmModal } from "@/components/modals/DeleteConfirmModal";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Cell } from "@/hooks/useCells";
@@ -47,6 +49,7 @@ export default function Celulas() {
   const [cellModalOpen, setCellModalOpen] = useState(false);
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [membersModalOpen, setMembersModalOpen] = useState(false);
+  const [pillarsCell, setPillarsCell] = useState<Cell | null>(null);
   const [editingCell, setEditingCell] = useState<Cell | undefined>();
   const [deletingCell, setDeletingCell] = useState<Cell | null>(null);
   const [selectedCell, setSelectedCell] = useState<Cell | null>(null);
@@ -176,7 +179,7 @@ export default function Celulas() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList>
+          <TabsList className="flex-wrap h-auto gap-1">
             <TabsTrigger value="cells" className="flex items-center gap-2">
               <Grid3X3 className="w-4 h-4" />
               Células
@@ -185,6 +188,12 @@ export default function Celulas() {
               <BarChart3 className="w-4 h-4" />
               Visão Geral
             </TabsTrigger>
+            {pillarsCell && (
+              <TabsTrigger value="pillars" className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4" />
+                Ferramentas
+              </TabsTrigger>
+            )}
           </TabsList>
 
           {/* Cells Tab */}
@@ -238,6 +247,13 @@ export default function Celulas() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => {
+                              setPillarsCell(cell);
+                              setActiveTab("pillars");
+                            }}>
+                              <Sparkles className="w-4 h-4 mr-2" />
+                              Ferramentas do Líder
+                            </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleOpenMembers(cell)}>
                               <UserPlus className="w-4 h-4 mr-2" />
                               Gerenciar membros
@@ -336,6 +352,13 @@ export default function Celulas() {
               getMemberName={getMemberName}
             />
           </TabsContent>
+
+          {/* Leader Pillars Tab */}
+          {pillarsCell && churchId && (
+            <TabsContent value="pillars" className="mt-6">
+              <CellLeaderPillars cell={pillarsCell} churchId={churchId} />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
 

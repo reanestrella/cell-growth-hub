@@ -40,6 +40,7 @@ import { TransactionModal } from "@/components/modals/TransactionModal";
 import { DeleteConfirmModal } from "@/components/modals/DeleteConfirmModal";
 import { TithersTable } from "@/components/financial/TithersTable";
 import { TithersChart } from "@/components/financial/TithersChart";
+import { FinancialAccountsTab, FinancialCampaignsTab } from "@/components/financial/FinancialAccountsCampaigns";
 import { useAuth } from "@/contexts/AuthContext";
 import type { FinancialTransaction } from "@/hooks/useFinancial";
 
@@ -193,10 +194,12 @@ export default function Financeiro() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList>
+          <TabsList className="flex-wrap h-auto gap-1">
             <TabsTrigger value="overview">Visão Geral</TabsTrigger>
             <TabsTrigger value="transactions">Movimentações</TabsTrigger>
             <TabsTrigger value="tithers">Dizimistas</TabsTrigger>
+            <TabsTrigger value="accounts">Contas</TabsTrigger>
+            <TabsTrigger value="campaigns">Campanhas</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6 mt-6">
@@ -436,6 +439,16 @@ export default function Financeiro() {
                 <TithersTable tithers={tithers} months={months} />
               </>
             )}
+          </TabsContent>
+
+          {/* Accounts Tab */}
+          <TabsContent value="accounts" className="mt-6">
+            {churchId && <FinancialAccountsTab churchId={churchId} />}
+          </TabsContent>
+
+          {/* Campaigns Tab */}
+          <TabsContent value="campaigns" className="mt-6">
+            {churchId && <FinancialCampaignsTab churchId={churchId} />}
           </TabsContent>
         </Tabs>
       </div>
