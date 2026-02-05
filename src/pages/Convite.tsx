@@ -37,9 +37,7 @@ interface InvitationData {
   token: string;
   full_name: string | null;
   congregation_id: string | null;
-  churches: {
-    name: string;
-  } | null;
+  church_name: string;
 }
 
 const roleLabels: Record<string, string> = {
@@ -80,20 +78,23 @@ export default function Convite() {
       }
 
       try {
-        const { data, error } = await (supabase
-          .from("invitations" as any)
-          .select("*, churches(name)")
-          .eq("token", token)
-          .is("used_at", null)
-          .gt("expires_at", new Date().toISOString())
-          .single() as any);
+        // Use RPC function that bypasses RLS for public access
+        const { data, error } = await supabase.rpc("get_invitation_by_token", {
+          _token: token,
+        });
 
-        if (error || !data) {
+        if (error) {
+          console.error("Error fetching invitation:", error);
           setError("Convite inválido, expirado ou já utilizado.");
           return;
         }
 
-        const invitationData = data as unknown as InvitationData;
+        if (!data || data.length === 0) {
+          setError("Convite inválido, expirado ou já utilizado.");
+          return;
+        }
+
+        const invitationData = data[0] as InvitationData;
         setInvitation(invitationData);
         
         // Pre-fill name if provided in invitation
@@ -101,6 +102,7 @@ export default function Convite() {
           form.setValue("full_name", invitationData.full_name);
         }
       } catch (err) {
+        console.error("Fetch error:", err);
         setError("Erro ao carregar convite.");
       } finally {
         setIsLoading(false);
@@ -194,7 +196,7 @@ export default function Convite() {
           </div>
           <CardTitle>Bem-vindo(a)!</CardTitle>
           <CardDescription>
-            Você foi convidado para fazer parte de <strong>{invitation.churches?.name || "uma igreja"}</strong> como <strong>{roleLabels[invitation.role]}</strong>.
+            Você foi convidado para fazer parte de <strong>{invitation.church_name}</strong> como <strong>{roleLabels[invitation.role]}</strong>.
           </CardDescription>
         </CardHeader>
         <CardContent>
