@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,7 +27,9 @@ import {
 } from "lucide-react";
 import { useInvitations } from "@/hooks/useInvitations";
 import { useCongregations } from "@/hooks/useCongregations";
+import { useChurchSettings } from "@/hooks/useChurchSettings";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 import { InviteUserModal } from "@/components/modals/InviteUserModal";
 import { CongregationModal } from "@/components/modals/CongregationModal";
 import type { Congregation, CreateCongregationData } from "@/hooks/useCongregations";
@@ -70,13 +72,52 @@ export default function Configuracoes() {
   const [congregationModalOpen, setCongregationModalOpen] = useState(false);
   const [editingCongregation, setEditingCongregation] = useState<Congregation | undefined>();
   
-  const { profile } = useAuth();
+  // Church form state
+  const [churchName, setChurchName] = useState("");
+  const [churchCnpj, setChurchCnpj] = useState("");
+  const [churchEmail, setChurchEmail] = useState("");
+  const [churchPhone, setChurchPhone] = useState("");
+  const [churchAddress, setChurchAddress] = useState("");
+  
+  const { profile, refreshChurch } = useAuth();
+  const { toast } = useToast();
   const churchId = profile?.church_id;
   const { invitations, isLoading, createInvitation, deleteInvitation, getInviteLink } = useInvitations();
   const { congregations, isLoading: loadingCongregations, createCongregation, updateCongregation } = useCongregations(churchId || undefined);
+  const { church, isLoading: loadingChurch, isSaving, updateChurch } = useChurchSettings();
+
+  // Initialize form with church data
+  useEffect(() => {
+    if (church) {
+      setChurchName(church.name || "");
+      setChurchCnpj(church.cnpj || "");
+      setChurchEmail(church.email || "");
+      setChurchPhone(church.phone || "");
+      setChurchAddress(church.address || "");
+    }
+  }, [church]);
+
+  const handleSaveChurch = async () => {
+    const result = await updateChurch({
+      name: churchName,
+      cnpj: churchCnpj || undefined,
+      email: churchEmail || undefined,
+      phone: churchPhone || undefined,
+      address: churchAddress || undefined,
+    });
+
+    if (!result.error) {
+      // Refresh church in AuthContext to update header/sidebar
+      await refreshChurch();
+    }
+  };
 
   const handleCopyLink = async (token: string) => {
     await navigator.clipboard.writeText(getInviteLink(token));
+    toast({
+      title: "Link copiado!",
+      description: "O link de convite foi copiado para a área de transferência.",
+    });
   };
 
   const handleOpenEditCongregation = (congregation: Congregation) => {
@@ -137,29 +178,66 @@ export default function Configuracoes() {
                 <CardDescription>Dados principais da sua igreja</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="churchName">Nome da Igreja</Label>
-                    <Input id="churchName" defaultValue="Igreja Evangélica Vida Nova" />
+                {loadingChurch ? (
+                  <div className="flex items-center justify-center p-8">
+                    <Loader2 className="w-6 h-6 animate-spin" />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="cnpj">CNPJ</Label>
-                    <Input id="cnpj" defaultValue="12.345.678/0001-90" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input id="email" type="email" defaultValue="contato@igrejavn.com.br" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Telefone</Label>
-                    <Input id="phone" defaultValue="(11) 3456-7890" />
-                  </div>
-                  <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="address">Endereço</Label>
-                    <Input id="address" defaultValue="Rua da Paz, 123 - Centro - São Paulo/SP" />
-                  </div>
-                </div>
-                <Button>Salvar Alterações</Button>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="churchName">Nome da Igreja</Label>
+                        <Input 
+                          id="churchName" 
+                          value={churchName}
+                          onChange={(e) => setChurchName(e.target.value)}
+                          placeholder="Nome da sua igreja"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="cnpj">CNPJ</Label>
+                        <Input 
+                          id="cnpj" 
+                          value={churchCnpj}
+                          onChange={(e) => setChurchCnpj(e.target.value)}
+                          placeholder="00.000.000/0000-00"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="email">Email</Label>
+                        <Input 
+                          id="email" 
+                          type="email" 
+                          value={churchEmail}
+                          onChange={(e) => setChurchEmail(e.target.value)}
+                          placeholder="contato@igreja.com.br"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="phone">Telefone</Label>
+                        <Input 
+                          id="phone" 
+                          value={churchPhone}
+                          onChange={(e) => setChurchPhone(e.target.value)}
+                          placeholder="(00) 0000-0000"
+                        />
+                      </div>
+                      <div className="space-y-2 md:col-span-2">
+                        <Label htmlFor="address">Endereço</Label>
+                        <Input 
+                          id="address" 
+                          value={churchAddress}
+                          onChange={(e) => setChurchAddress(e.target.value)}
+                          placeholder="Rua, número - Bairro - Cidade/UF"
+                        />
+                      </div>
+                    </div>
+                    <Button onClick={handleSaveChurch} disabled={isSaving}>
+                      {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                      Salvar Alterações
+                    </Button>
+                  </>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

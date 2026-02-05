@@ -39,7 +39,7 @@ interface InvitationData {
   congregation_id: string | null;
   churches: {
     name: string;
-  };
+  } | null;
 }
 
 const roleLabels: Record<string, string> = {
@@ -194,7 +194,7 @@ export default function Convite() {
           </div>
           <CardTitle>Bem-vindo(a)!</CardTitle>
           <CardDescription>
-            Você foi convidado para fazer parte de <strong>{invitation.churches.name}</strong> como <strong>{roleLabels[invitation.role]}</strong>.
+            Você foi convidado para fazer parte de <strong>{invitation.churches?.name || "uma igreja"}</strong> como <strong>{roleLabels[invitation.role]}</strong>.
           </CardDescription>
         </CardHeader>
         <CardContent>

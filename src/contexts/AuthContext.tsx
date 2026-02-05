@@ -17,6 +17,7 @@ interface Profile {
 interface Church {
   id: string;
   name: string;
+  logo_url?: string | null;
 }
 
 interface UserRole {
@@ -35,6 +36,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   hasRole: (role: UserRole["role"]) => boolean;
   isAdmin: () => boolean;
+  refreshChurch: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -100,7 +102,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (profileData.church_id) {
           const { data: churchData } = await supabase
             .from("churches")
-            .select("id, name")
+            .select("id, name, logo_url")
             .eq("id", profileData.church_id)
             .single();
           
@@ -147,6 +149,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return hasRole("pastor");
   };
 
+  const refreshChurch = async () => {
+    if (!profile?.church_id) return;
+    
+    const { data: churchData } = await supabase
+      .from("churches")
+      .select("id, name, logo_url")
+      .eq("id", profile.church_id)
+      .single();
+    
+    if (churchData) {
+      setChurch(churchData as Church);
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -160,6 +176,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         signOut,
         hasRole,
         isAdmin,
+        refreshChurch,
       }}
     >
       {children}
