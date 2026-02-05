@@ -1612,6 +1612,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_invitation_by_token: {
+        Args: { _token: string }
+        Returns: {
+          church_id: string
+          church_name: string
+          congregation_id: string
+          email: string
+          expires_at: string
+          full_name: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          token: string
+          used_at: string
+        }[]
+      }
       get_user_church_id: { Args: { _user_id: string }; Returns: string }
       get_user_member_id: { Args: { _user_id: string }; Returns: string }
       has_role: {
