@@ -16,6 +16,10 @@ import {
   LogOut,
   Crown,
   Handshake,
+  BookOpen,
+  Home,
+  Armchair,
+  Bell,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -27,7 +31,7 @@ interface MenuItem {
   icon: typeof LayoutDashboard;
   label: string;
   path: string;
-  allowedRoles?: AppRole[]; // undefined = all roles can access
+  allowedRoles?: AppRole[];
 }
 
 const allMenuItems: MenuItem[] = [
@@ -39,6 +43,10 @@ const allMenuItems: MenuItem[] = [
   { icon: GraduationCap, label: "Ensino", path: "/ensino", allowedRoles: ["pastor", "secretario"] },
   { icon: DollarSign, label: "Financeiro", path: "/financeiro", allowedRoles: ["pastor", "tesoureiro"] },
   { icon: Calendar, label: "Eventos", path: "/eventos", allowedRoles: ["pastor", "secretario", "lider_ministerio"] },
+  { icon: BookOpen, label: "Discipulados", path: "/discipulados", allowedRoles: ["pastor", "secretario"] },
+  { icon: Home, label: "Visitas", path: "/visitas", allowedRoles: ["pastor", "secretario"] },
+  { icon: Armchair, label: "Gabinete", path: "/gabinete", allowedRoles: ["pastor", "secretario"] },
+  { icon: Bell, label: "Lembretes", path: "/lembretes", allowedRoles: ["pastor", "secretario"] },
   { icon: User, label: "Meu App", path: "/meu-app" },
 ];
 
@@ -52,15 +60,14 @@ export function Sidebar() {
   const navigate = useNavigate();
   const { church, signOut, roles, isAdmin } = useAuth();
 
-  // Filter menu items based on user roles
   const menuItems = useMemo(() => {
     if (isAdmin()) {
-      return allMenuItems; // Admin sees everything
+      return allMenuItems;
     }
     
     const userRoles = roles.map(r => r.role);
     return allMenuItems.filter(item => {
-      if (!item.allowedRoles) return true; // No restriction
+      if (!item.allowedRoles) return true;
       return item.allowedRoles.some(role => userRoles.includes(role));
     });
   }, [roles, isAdmin]);

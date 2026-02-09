@@ -719,6 +719,70 @@ export type Database = {
           },
         ]
       }
+      discipleships: {
+        Row: {
+          church_id: string
+          created_at: string
+          created_by: string | null
+          disciple_id: string
+          discipler_id: string | null
+          end_date: string | null
+          id: string
+          notes: string | null
+          start_date: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          church_id: string
+          created_at?: string
+          created_by?: string | null
+          disciple_id: string
+          discipler_id?: string | null
+          end_date?: string | null
+          id?: string
+          notes?: string | null
+          start_date?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          church_id?: string
+          created_at?: string
+          created_by?: string | null
+          disciple_id?: string
+          discipler_id?: string | null
+          end_date?: string | null
+          id?: string
+          notes?: string | null
+          start_date?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "discipleships_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "discipleships_disciple_id_fkey"
+            columns: ["disciple_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "discipleships_discipler_id_fkey"
+            columns: ["discipler_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_registrations: {
         Row: {
           confirmed: boolean | null
@@ -1376,6 +1440,131 @@ export type Database = {
           },
         ]
       }
+      pastoral_counseling: {
+        Row: {
+          church_id: string
+          counselor_id: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          is_private: boolean
+          member_id: string | null
+          notes: string | null
+          session_date: string
+          session_type: string
+          updated_at: string
+        }
+        Insert: {
+          church_id: string
+          counselor_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_private?: boolean
+          member_id?: string | null
+          notes?: string | null
+          session_date?: string
+          session_type?: string
+          updated_at?: string
+        }
+        Update: {
+          church_id?: string
+          counselor_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_private?: boolean
+          member_id?: string | null
+          notes?: string | null
+          session_date?: string
+          session_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pastoral_counseling_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pastoral_counseling_counselor_id_fkey"
+            columns: ["counselor_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pastoral_counseling_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pastoral_visits: {
+        Row: {
+          church_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          member_id: string | null
+          notes: string | null
+          reason: string | null
+          updated_at: string
+          visit_date: string
+          visitor_id: string | null
+        }
+        Insert: {
+          church_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          member_id?: string | null
+          notes?: string | null
+          reason?: string | null
+          updated_at?: string
+          visit_date?: string
+          visitor_id?: string | null
+        }
+        Update: {
+          church_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          member_id?: string | null
+          notes?: string | null
+          reason?: string | null
+          updated_at?: string
+          visit_date?: string
+          visitor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pastoral_visits_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pastoral_visits_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pastoral_visits_visitor_id_fkey"
+            columns: ["visitor_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       prayer_requests: {
         Row: {
           church_id: string
@@ -1481,6 +1670,69 @@ export type Database = {
           },
           {
             foreignKeyName: "profiles_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reminders: {
+        Row: {
+          assigned_to: string | null
+          church_id: string
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          due_date: string | null
+          id: string
+          is_completed: boolean
+          member_id: string | null
+          reminder_type: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          church_id: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          is_completed?: boolean
+          member_id?: string | null
+          reminder_type?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          church_id?: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          is_completed?: boolean
+          member_id?: string | null
+          reminder_type?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reminders_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reminders_member_id_fkey"
             columns: ["member_id"]
             isOneToOne: false
             referencedRelation: "members"
