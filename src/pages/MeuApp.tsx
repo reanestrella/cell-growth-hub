@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,85 +19,101 @@ import {
   Clock,
   MapPin,
   Plus,
+  Loader2,
+  Camera,
 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
-const userProfile = {
-  name: "João Silva",
-  email: "joao.silva@email.com",
-  phone: "(11) 99999-1234",
-  cell: "Célula Vida Nova",
-  leader: "Pedro Costa",
-  status: "Membro",
-  baptized: true,
-  memberSince: "2023-01-15",
-};
+interface Announcement {
+  id: string;
+  title: string;
+  content: string;
+  created_at: string;
+}
 
-const announcements = [
-  {
-    id: 1,
-    title: "Culto Especial de Ano Novo",
-    description: "Convocamos toda a igreja para um momento especial de gratidão",
-    date: "21 Jan",
-    priority: "high",
-  },
-  {
-    id: 2,
-    title: "Reunião de Células",
-    description: "Encontro mensal de líderes de células",
-    date: "25 Jan",
-    priority: "normal",
-  },
-  {
-    id: 3,
-    title: "Campanha de Missões",
-    description: "Participe da nossa campanha missionária 2024",
-    date: "Até Dez",
-    priority: "normal",
-  },
-];
+interface BirthdayMember {
+  id: string;
+  full_name: string;
+  birth_date: string;
+}
 
-const mySchedule = [
-  {
-    id: 1,
-    title: "Culto Domingo",
-    date: "21 Jan",
-    time: "09:00",
-    location: "Templo Principal",
-    confirmed: true,
-  },
-  {
-    id: 2,
-    title: "Célula Vida Nova",
-    date: "22 Jan",
-    time: "19:30",
-    location: "Casa do Líder",
-    confirmed: true,
-  },
-  {
-    id: 3,
-    title: "Escola Bíblica",
-    date: "28 Jan",
-    time: "09:00",
-    location: "Salas de Aula",
-    confirmed: false,
-  },
-];
-
-const devotional = {
-  title: "O Poder da Oração",
-  verse: "Orai sem cessar. - 1 Tessalonicenses 5:17",
-  content:
-    "A oração é a nossa comunicação direta com Deus. Através dela, expressamos nossa gratidão, nossas necessidades e fortalecemos nossa fé...",
-  date: "19 de Janeiro, 2024",
-};
-
-const prayerRequests = [
-  { id: 1, request: "Cura para minha mãe", author: "Anônimo", date: "Hoje" },
-  { id: 2, request: "Emprego para meu filho", author: "Maria S.", date: "Ontem" },
-  { id: 3, request: "Paz na família", author: "Anônimo", date: "2 dias" },
-];
+interface UpcomingEvent {
+  id: string;
+  title: string;
+  event_date: string;
+  event_time: string | null;
+  location: string | null;
+}
 
 export default function MeuApp() {
+  const { profile, church } = useAuth();
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [birthdays, setBirthdays] = useState<BirthdayMember[]>([]);
+  const [events, setEvents] = useState<UpcomingEvent[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (profile?.church_id) {
+      fetchData();
+    }
+  }, [profile?.church_id]);
+
+  const fetchData = async () => {
+    if (!profile?.church_id) return;
+    setIsLoading(true);
+    
+    try {
+      // Fetch announcements
+      const { data: announcementsData } = await supabase
+        .from("announcements")
+        .select("id, title, content, created_at")
+        .eq("church_id", profile.church_id)
+        .eq("is_active", true)
+        .order("created_at", { ascending: false })
+        .limit(5);
+      setAnnouncements((announcementsData as Announcement[]) || []);
+
+      // Fetch birthdays this month
+      const now = new Date();
+      const currentMonth = (now.getMonth() + 1).toString().padStart(2, "0");
+      const { data: birthdayData } = await supabase
+        .from("members")
+        .select("id, full_name, birth_date")
+        .eq("church_id", profile.church_id)
+        .eq("is_active", true)
+        .not("birth_date", "is", null);
+      
+      const monthBirthdays = (birthdayData || []).filter((m: any) => {
+        if (!m.birth_date) return false;
+        const bd = m.birth_date.split("-");
+        return bd[1] === currentMonth;
+      });
+      setBirthdays(monthBirthdays as BirthdayMember[]);
+
+      // Fetch upcoming events
+      const today = now.toISOString().split("T")[0];
+      const { data: eventsData } = await supabase
+        .from("events")
+        .select("id, title, event_date, event_time, location")
+        .eq("church_id", profile.church_id)
+        .gte("event_date", today)
+        .order("event_date", { ascending: true })
+        .limit(5);
+      setEvents((eventsData as UpcomingEvent[]) || []);
+    } catch (error) {
+      console.error("Error fetching MeuApp data:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const initials = profile?.full_name
+    ?.split(" ")
+    .map((n) => n[0])
+    .join("")
+    .slice(0, 2) || "?";
+
   return (
     <AppLayout>
       <div className="space-y-6">
@@ -104,24 +121,29 @@ export default function MeuApp() {
         <Card className="gradient-hero text-primary-foreground">
           <CardContent className="p-6">
             <div className="flex flex-col md:flex-row md:items-center gap-6">
-              <Avatar className="w-20 h-20 border-4 border-primary-foreground/20">
-                <AvatarImage src="" />
-                <AvatarFallback className="text-2xl bg-primary-foreground/20 text-primary-foreground">
-                  JS
-                </AvatarFallback>
-              </Avatar>
+              <div className="relative">
+                <Avatar className="w-20 h-20 border-4 border-primary-foreground/20">
+                  <AvatarImage src={profile?.avatar_url || ""} />
+                  <AvatarFallback className="text-2xl bg-primary-foreground/20 text-primary-foreground">
+                    {initials}
+                  </AvatarFallback>
+                </Avatar>
+                <button className="absolute bottom-0 right-0 p-1.5 rounded-full bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors">
+                  <Camera className="w-3.5 h-3.5" />
+                </button>
+              </div>
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
-                  <h1 className="text-2xl font-bold">{userProfile.name}</h1>
+                  <h1 className="text-2xl font-bold">{profile?.full_name || "Membro"}</h1>
                   <Badge className="bg-primary-foreground/20 text-primary-foreground border-0">
-                    {userProfile.status}
+                    Membro
                   </Badge>
                 </div>
                 <div className="flex flex-wrap gap-4 text-sm opacity-90">
-                  <span>{userProfile.email}</span>
-                  <span>•</span>
-                  <span>{userProfile.cell}</span>
+                  <span>{profile?.email || ""}</span>
+                  {profile?.phone && <span>• {profile.phone}</span>}
                 </div>
+                <p className="text-sm opacity-70 mt-1">{church?.name || ""}</p>
               </div>
               <Button variant="secondary" className="self-start">
                 <Settings className="w-4 h-4 mr-2" />
@@ -131,276 +153,226 @@ export default function MeuApp() {
           </CardContent>
         </Card>
 
-        <Tabs defaultValue="overview">
-          <TabsList className="w-full md:w-auto">
-            <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-            <TabsTrigger value="schedule">Minha Agenda</TabsTrigger>
-            <TabsTrigger value="devotional">Devocional</TabsTrigger>
-            <TabsTrigger value="prayer">Oração</TabsTrigger>
-          </TabsList>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          </div>
+        ) : (
+          <Tabs defaultValue="overview">
+            <TabsList className="w-full md:w-auto">
+              <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+              <TabsTrigger value="schedule">Eventos</TabsTrigger>
+              <TabsTrigger value="prayer">Oração</TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="overview" className="space-y-6 mt-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* Announcements */}
-              <Card className="md:col-span-2 lg:col-span-1">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Bell className="w-5 h-5 text-secondary" />
-                    Avisos
-                  </CardTitle>
-                  <Badge variant="secondary">3 novos</Badge>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {announcements.map((item) => (
-                      <div
-                        key={item.id}
-                        className="p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors cursor-pointer"
-                      >
-                        <div className="flex items-start justify-between gap-2 mb-1">
-                          <h4 className="font-medium text-sm">{item.title}</h4>
-                          {item.priority === "high" && (
-                            <Badge className="bg-destructive/20 text-destructive text-xs">
-                              Importante
-                            </Badge>
-                          )}
-                        </div>
-                        <p className="text-xs text-muted-foreground mb-2">
-                          {item.description}
-                        </p>
-                        <span className="text-xs text-muted-foreground">{item.date}</span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Next Events */}
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Calendar className="w-5 h-5 text-secondary" />
-                    Próximos Compromissos
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {mySchedule.map((event) => (
-                      <div
-                        key={event.id}
-                        className="flex items-center gap-3 p-3 rounded-lg bg-muted/50"
-                      >
-                        <div className="flex flex-col items-center justify-center w-12 h-12 rounded-lg bg-background">
-                          <span className="text-xs text-muted-foreground">
-                            {event.date.split(" ")[1]}
-                          </span>
-                          <span className="font-bold">{event.date.split(" ")[0]}</span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm truncate">{event.title}</p>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <Clock className="w-3 h-3" />
-                            <span>{event.time}</span>
+            <TabsContent value="overview" className="space-y-6 mt-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* Announcements */}
+                <Card className="md:col-span-2 lg:col-span-1">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Bell className="w-5 h-5 text-secondary" />
+                      Avisos
+                    </CardTitle>
+                    {announcements.length > 0 && (
+                      <Badge variant="secondary">{announcements.length} aviso(s)</Badge>
+                    )}
+                  </CardHeader>
+                  <CardContent>
+                    {announcements.length === 0 ? (
+                      <p className="text-center text-muted-foreground py-4">Nenhum aviso no momento.</p>
+                    ) : (
+                      <div className="space-y-4">
+                        {announcements.map((item) => (
+                          <div key={item.id} className="p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+                            <h4 className="font-medium text-sm mb-1">{item.title}</h4>
+                            <p className="text-xs text-muted-foreground line-clamp-2">{item.content}</p>
+                            <span className="text-xs text-muted-foreground mt-1 block">
+                              {new Date(item.created_at).toLocaleDateString("pt-BR")}
+                            </span>
                           </div>
-                        </div>
-                        {event.confirmed ? (
-                          <Badge variant="outline" className="bg-success/10 text-success border-success/30">
-                            Confirmado
-                          </Badge>
-                        ) : (
-                          <Button size="sm" variant="outline">
-                            Confirmar
-                          </Button>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Birthdays */}
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Heart className="w-5 h-5 text-secondary" />
+                      Aniversariantes do Mês
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {birthdays.length === 0 ? (
+                      <p className="text-center text-muted-foreground py-4">Nenhum aniversariante este mês.</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {birthdays.slice(0, 5).map((m) => (
+                          <div key={m.id} className="flex items-center gap-3 p-2 rounded-lg bg-muted/50">
+                            <Avatar className="w-8 h-8">
+                              <AvatarFallback className="bg-secondary/10 text-secondary text-xs">
+                                {m.full_name.split(" ").map(n => n[0]).join("").slice(0, 2)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm truncate">{m.full_name}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {m.birth_date ? new Date(m.birth_date + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short" }) : ""}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                        {birthdays.length > 5 && (
+                          <p className="text-xs text-muted-foreground text-center">+ {birthdays.length - 5} mais</p>
                         )}
                       </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+                    )}
+                  </CardContent>
+                </Card>
 
-              {/* Daily Devotional Preview */}
-              <Card className="bg-gradient-to-br from-secondary/5 to-accent border-secondary/30">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Sparkles className="w-5 h-5 text-secondary" />
-                    Devocional do Dia
-                  </CardTitle>
+                {/* Upcoming Events */}
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Calendar className="w-5 h-5 text-secondary" />
+                      Próximos Eventos
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {events.length === 0 ? (
+                      <p className="text-center text-muted-foreground py-4">Nenhum evento próximo.</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {events.map((event) => (
+                          <div key={event.id} className="flex items-center gap-3 p-2 rounded-lg bg-muted/50">
+                            <div className="flex flex-col items-center justify-center w-10 h-10 rounded-lg bg-background">
+                              <span className="text-xs font-bold text-primary">
+                                {new Date(event.event_date + "T12:00:00").getDate()}
+                              </span>
+                              <span className="text-[10px] text-muted-foreground uppercase">
+                                {new Date(event.event_date + "T12:00:00").toLocaleDateString("pt-BR", { month: "short" })}
+                              </span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm truncate">{event.title}</p>
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                {event.event_time && (
+                                  <span className="flex items-center gap-1">
+                                    <Clock className="w-3 h-3" />{event.event_time}
+                                  </span>
+                                )}
+                                {event.location && (
+                                  <span className="flex items-center gap-1">
+                                    <MapPin className="w-3 h-3" />{event.location}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Quick Actions */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <Button variant="outline" className="h-20 flex-col gap-2">
+                  <Heart className="w-6 h-6 text-secondary" />
+                  <span className="text-sm">Pedido de Oração</span>
+                </Button>
+                <Button variant="outline" className="h-20 flex-col gap-2">
+                  <MessageSquare className="w-6 h-6 text-info" />
+                  <span className="text-sm">Testemunho</span>
+                </Button>
+                <Button variant="outline" className="h-20 flex-col gap-2">
+                  <BookOpen className="w-6 h-6 text-success" />
+                  <span className="text-sm">Meus Cursos</span>
+                </Button>
+                <Button variant="outline" className="h-20 flex-col gap-2">
+                  <Calendar className="w-6 h-6 text-primary" />
+                  <span className="text-sm">Inscrições</span>
+                </Button>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="schedule" className="mt-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Próximos Eventos</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <h4 className="font-semibold mb-2">{devotional.title}</h4>
-                  <blockquote className="text-sm italic text-muted-foreground border-l-2 border-secondary pl-3 mb-3">
-                    {devotional.verse}
-                  </blockquote>
-                  <p className="text-sm text-muted-foreground line-clamp-3 mb-3">
-                    {devotional.content}
-                  </p>
-                  <Button variant="outline" size="sm" className="w-full">
-                    Ler Completo
-                    <ChevronRight className="w-4 h-4 ml-1" />
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Quick Actions */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Button variant="outline" className="h-20 flex-col gap-2">
-                <Heart className="w-6 h-6 text-secondary" />
-                <span className="text-sm">Pedido de Oração</span>
-              </Button>
-              <Button variant="outline" className="h-20 flex-col gap-2">
-                <MessageSquare className="w-6 h-6 text-info" />
-                <span className="text-sm">Testemunho</span>
-              </Button>
-              <Button variant="outline" className="h-20 flex-col gap-2">
-                <BookOpen className="w-6 h-6 text-success" />
-                <span className="text-sm">Meus Cursos</span>
-              </Button>
-              <Button variant="outline" className="h-20 flex-col gap-2">
-                <Calendar className="w-6 h-6 text-primary" />
-                <span className="text-sm">Inscrições</span>
-              </Button>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="schedule" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Minha Agenda</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {mySchedule.map((event) => (
-                    <div
-                      key={event.id}
-                      className="flex items-center gap-4 p-4 rounded-lg border hover:bg-muted/50 transition-colors"
-                    >
-                      <div className="flex flex-col items-center justify-center w-16 h-16 rounded-xl bg-primary/10">
-                        <span className="text-xs text-muted-foreground uppercase">
-                          {event.date.split(" ")[1]}
-                        </span>
-                        <span className="text-2xl font-bold text-primary">
-                          {event.date.split(" ")[0]}
-                        </span>
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="font-semibold">{event.title}</h4>
-                        <div className="flex flex-wrap gap-3 text-sm text-muted-foreground mt-1">
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-4 h-4" />
-                            {event.time}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <MapPin className="w-4 h-4" />
-                            {event.location}
-                          </span>
+                  {events.length === 0 ? (
+                    <p className="text-center text-muted-foreground py-8">Nenhum evento agendado.</p>
+                  ) : (
+                    <div className="space-y-4">
+                      {events.map((event) => (
+                        <div key={event.id} className="flex items-center gap-4 p-4 rounded-lg border hover:bg-muted/50 transition-colors">
+                          <div className="flex flex-col items-center justify-center w-16 h-16 rounded-xl bg-primary/10">
+                            <span className="text-2xl font-bold text-primary">{new Date(event.event_date + "T12:00:00").getDate()}</span>
+                            <span className="text-xs text-muted-foreground uppercase">
+                              {new Date(event.event_date + "T12:00:00").toLocaleDateString("pt-BR", { month: "short" })}
+                            </span>
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="font-semibold">{event.title}</h4>
+                            <div className="flex flex-wrap gap-3 text-sm text-muted-foreground mt-1">
+                              {event.event_time && (
+                                <span className="flex items-center gap-1"><Clock className="w-4 h-4" />{event.event_time}</span>
+                              )}
+                              {event.location && (
+                                <span className="flex items-center gap-1"><MapPin className="w-4 h-4" />{event.location}</span>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                      {event.confirmed ? (
-                        <Badge className="bg-success/20 text-success border-0">
-                          Presença Confirmada
-                        </Badge>
-                      ) : (
-                        <Button>Confirmar Presença</Button>
-                      )}
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="devotional" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BookOpen className="w-5 h-5 text-secondary" />
-                  {devotional.title}
-                </CardTitle>
-                <p className="text-sm text-muted-foreground">{devotional.date}</p>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <blockquote className="text-lg italic border-l-4 border-secondary pl-4 py-2 bg-secondary/5 rounded-r-lg">
-                  {devotional.verse}
-                </blockquote>
-                <p className="text-muted-foreground leading-relaxed">
-                  {devotional.content}
-                </p>
-                <p className="text-muted-foreground leading-relaxed">
-                  Quando oramos, não estamos apenas pedindo coisas a Deus, mas estamos
-                  construindo um relacionamento profundo com Ele. A oração nos transforma,
-                  nos aproxima do coração do Pai e nos dá forças para enfrentar os desafios
-                  do dia a dia.
-                </p>
-                <div className="flex gap-3">
-                  <Button variant="outline">
-                    <Heart className="w-4 h-4 mr-2" />
-                    Marcar como Lido
-                  </Button>
-                  <Button variant="outline">
-                    <MessageSquare className="w-4 h-4 mr-2" />
-                    Compartilhar Reflexão
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="prayer" className="mt-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Heart className="w-5 h-5 text-secondary" />
-                    Meus Pedidos
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Button className="w-full mb-4 gradient-accent text-secondary-foreground">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Novo Pedido de Oração
-                  </Button>
-                  <p className="text-center text-muted-foreground py-8">
-                    Você ainda não tem pedidos de oração cadastrados.
-                  </p>
+                  )}
                 </CardContent>
               </Card>
+            </TabsContent>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Users className="w-5 h-5 text-secondary" />
-                    Pedidos da Comunidade
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {prayerRequests.map((item) => (
-                      <div
-                        key={item.id}
-                        className="p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
-                      >
-                        <p className="font-medium text-sm mb-2">{item.request}</p>
-                        <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          <span>{item.author}</span>
-                          <span>{item.date}</span>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="w-full mt-2 text-secondary hover:text-secondary"
-                        >
-                          <Heart className="w-4 h-4 mr-1" />
-                          Orar por este pedido
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-        </Tabs>
+            <TabsContent value="prayer" className="mt-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Heart className="w-5 h-5 text-secondary" />
+                      Meus Pedidos
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Button className="w-full mb-4 gradient-accent text-secondary-foreground">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Novo Pedido de Oração
+                    </Button>
+                    <p className="text-center text-muted-foreground py-8">
+                      Você ainda não tem pedidos de oração cadastrados.
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Users className="w-5 h-5 text-secondary" />
+                      Pedidos da Comunidade
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-center text-muted-foreground py-8">
+                      Nenhum pedido público no momento.
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+          </Tabs>
+        )}
       </div>
     </AppLayout>
   );

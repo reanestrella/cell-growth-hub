@@ -18,6 +18,10 @@ import Eventos from "./pages/Eventos";
 import MeuApp from "./pages/MeuApp";
 import Configuracoes from "./pages/Configuracoes";
 import Consolidacao from "./pages/Consolidacao";
+import Discipulados from "./pages/Discipulados";
+import Visitas from "./pages/Visitas";
+import Gabinete from "./pages/Gabinete";
+import Lembretes from "./pages/Lembretes";
 import Instalar from "./pages/Instalar";
 import NotFound from "./pages/NotFound";
 
@@ -47,6 +51,10 @@ const App = () => (
             <Route path="/financeiro" element={<Financeiro />} />
             <Route path="/eventos" element={<Eventos />} />
             <Route path="/consolidacao" element={<Consolidacao />} />
+            <Route path="/discipulados" element={<Discipulados />} />
+            <Route path="/visitas" element={<Visitas />} />
+            <Route path="/gabinete" element={<Gabinete />} />
+            <Route path="/lembretes" element={<Lembretes />} />
             <Route path="/meu-app" element={<MeuApp />} />
             <Route path="/configuracoes" element={<Configuracoes />} />
             
