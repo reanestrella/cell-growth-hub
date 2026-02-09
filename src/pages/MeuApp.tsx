@@ -46,11 +46,28 @@ interface UpcomingEvent {
   location: string | null;
 }
 
+interface MySchedule {
+  id: string;
+  schedule_id: string;
+  role: string | null;
+  confirmed: boolean | null;
+  schedule: {
+    id: string;
+    event_name: string;
+    event_date: string;
+    notes: string | null;
+    ministry: {
+      name: string;
+    } | null;
+  } | null;
+}
+
 export default function MeuApp() {
   const { profile, church } = useAuth();
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [birthdays, setBirthdays] = useState<BirthdayMember[]>([]);
   const [events, setEvents] = useState<UpcomingEvent[]>([]);
+  const [schedules, setSchedules] = useState<MySchedule[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -101,6 +118,31 @@ export default function MeuApp() {
         .order("event_date", { ascending: true })
         .limit(5);
       setEvents((eventsData as UpcomingEvent[]) || []);
+
+      // Fetch my schedules (via member_id → schedule_volunteers)
+      if (profile.member_id) {
+        const { data: schedulesData } = await supabase
+          .from("schedule_volunteers")
+          .select(`
+            id,
+            schedule_id,
+            role,
+            confirmed,
+            schedule:ministry_schedules(
+              id,
+              event_name,
+              event_date,
+              notes,
+              ministry:ministries(name)
+            )
+          `)
+          .eq("member_id", profile.member_id);
+        
+        const validSchedules = ((schedulesData as any[]) || [])
+          .filter((s: any) => s.schedule && s.schedule.event_date >= today)
+          .sort((a: any, b: any) => a.schedule.event_date.localeCompare(b.schedule.event_date));
+        setSchedules(validSchedules as MySchedule[]);
+      }
     } catch (error) {
       console.error("Error fetching MeuApp data:", error);
     } finally {
@@ -161,6 +203,7 @@ export default function MeuApp() {
           <Tabs defaultValue="overview">
             <TabsList className="w-full md:w-auto">
               <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+              <TabsTrigger value="schedules">Minhas Escalas</TabsTrigger>
               <TabsTrigger value="schedule">Eventos</TabsTrigger>
               <TabsTrigger value="prayer">Oração</TabsTrigger>
             </TabsList>
@@ -298,6 +341,47 @@ export default function MeuApp() {
                   <span className="text-sm">Inscrições</span>
                 </Button>
               </div>
+            </TabsContent>
+
+            <TabsContent value="schedules" className="mt-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Clock className="w-5 h-5 text-primary" />
+                    Minhas Escalas
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {schedules.length === 0 ? (
+                    <p className="text-center text-muted-foreground py-8">Você não está escalado(a) em nenhum evento próximo.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {schedules.map((s) => (
+                        <div key={s.id} className="flex items-center gap-4 p-4 rounded-lg border hover:bg-muted/50 transition-colors">
+                          <div className="flex flex-col items-center justify-center w-16 h-16 rounded-xl bg-primary/10">
+                            <span className="text-2xl font-bold text-primary">
+                              {s.schedule ? new Date(s.schedule.event_date + "T12:00:00").getDate() : "?"}
+                            </span>
+                            <span className="text-xs text-muted-foreground uppercase">
+                              {s.schedule ? new Date(s.schedule.event_date + "T12:00:00").toLocaleDateString("pt-BR", { month: "short" }) : ""}
+                            </span>
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="font-semibold">{s.schedule?.event_name || "Evento"}</h4>
+                            <p className="text-sm text-muted-foreground">
+                              {s.schedule?.ministry?.name || "Ministério"}
+                              {s.role ? ` • ${s.role}` : ""}
+                            </p>
+                          </div>
+                          <Badge variant={s.confirmed ? "default" : "secondary"}>
+                            {s.confirmed ? "Confirmado" : "Pendente"}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </TabsContent>
 
             <TabsContent value="schedule" className="mt-6">

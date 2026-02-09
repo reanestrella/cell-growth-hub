@@ -320,21 +320,28 @@ function MemberDashboard() {
 export default function Dashboard() {
   const { roles, isAdmin, hasRole } = useAuth();
 
-  // Determine which dashboard to show based on roles
-  const DashboardContent = useMemo(() => {
-    if (isAdmin() || hasRole("pastor")) return PastorDashboard;
-    if (hasRole("secretario")) return SecretaryDashboard;
-    if (hasRole("tesoureiro")) return TreasurerDashboard;
-    if (hasRole("lider_celula")) return CellLeaderDashboard;
-    if (hasRole("lider_ministerio")) return MinistryLeaderDashboard;
-    if (hasRole("consolidacao")) return ConsolidationDashboard;
-    return MemberDashboard;
+  // Determine which dashboard sections to show based on ALL roles (combined)
+  const dashboardSections = useMemo(() => {
+    // Pastor sees everything
+    if (isAdmin() || hasRole("pastor")) return [PastorDashboard];
+    
+    const sections: React.FC[] = [];
+    if (hasRole("secretario")) sections.push(SecretaryDashboard);
+    if (hasRole("tesoureiro")) sections.push(TreasurerDashboard);
+    if (hasRole("lider_celula")) sections.push(CellLeaderDashboard);
+    if (hasRole("lider_ministerio")) sections.push(MinistryLeaderDashboard);
+    if (hasRole("consolidacao")) sections.push(ConsolidationDashboard);
+    
+    if (sections.length === 0) sections.push(MemberDashboard);
+    return sections;
   }, [roles, isAdmin, hasRole]);
 
   return (
     <AppLayout>
       <div className="space-y-6">
-        <DashboardContent />
+        {dashboardSections.map((Section, index) => (
+          <Section key={index} />
+        ))}
       </div>
     </AppLayout>
   );

@@ -252,6 +252,9 @@ export function CellReportWithAttendanceModal({
                   <ScrollArea className="flex-1">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pr-4">
                       {cellMembers.map((cm) => {
+                        if (!cm || !cm.member_id) return null;
+                        const member = Array.isArray(cm.member) ? cm.member[0] : cm.member;
+                        const memberName = member?.full_name || "Membro";
                         const isPresent = presentMemberIds.has(cm.member_id);
                         return (
                           <button
@@ -270,11 +273,11 @@ export function CellReportWithAttendanceModal({
                             />
                             <Avatar className="w-7 h-7">
                               <AvatarFallback className={`text-xs ${isPresent ? "bg-success text-success-foreground" : "bg-muted"}`}>
-                                {cm.member?.full_name?.split(" ").map((n) => n[0]).join("").slice(0, 2) || "?"}
+                                {memberName.split(" ").map((n: string) => n[0]).join("").slice(0, 2) || "?"}
                               </AvatarFallback>
                             </Avatar>
                             <span className={`text-sm truncate ${isPresent ? "font-medium" : ""}`}>
-                              {cm.member?.full_name || "Membro"}
+                              {memberName}
                             </span>
                           </button>
                         );
