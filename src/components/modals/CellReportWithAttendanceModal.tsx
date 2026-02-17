@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -69,7 +69,8 @@ export function CellReportWithAttendanceModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [members, setMembers] = useState<MemberEntry[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
-  const [presentMemberIds, setPresentMemberIds] = useState<Set<string>>(new Set());
+  // Simple Record-based state — no Set, no complex structures
+  const [presencas, setPresencas] = useState<Record<string, boolean>>({});
 
   const form = useForm<ReportFormData>({
     resolver: zodResolver(reportSchema),
@@ -85,10 +86,11 @@ export function CellReportWithAttendanceModal({
 
   const selectedCellId = form.watch("cell_id");
 
+  // Fetch members only when cell changes — no dependency on presencas
   useEffect(() => {
     if (!selectedCellId) {
       setMembers([]);
-      setPresentMemberIds(new Set());
+      setPresencas({});
       return;
     }
 
@@ -99,16 +101,20 @@ export function CellReportWithAttendanceModal({
         setLoadingMembers(true);
         const { data, error } = await supabase
           .from("cell_members")
-          .select(`id, cell_id, member_id, member:members(id, full_name, phone)`)
+          .select("id, member_id, member:members(id, full_name)")
           .eq("cell_id", selectedCellId);
 
         if (cancelled) return;
-        if (error) throw error;
+        if (error) {
+          console.error("Erro ao buscar membros:", error);
+          setMembers([]);
+          return;
+        }
 
         const safe: MemberEntry[] = [];
         if (Array.isArray(data)) {
           for (const row of data) {
-            if (!row || !row.member_id) continue;
+            if (!row?.member_id) continue;
             const member = Array.isArray(row.member) ? row.member[0] : row.member;
             safe.push({
               id: row.id ?? row.member_id,
@@ -118,9 +124,9 @@ export function CellReportWithAttendanceModal({
           }
         }
         setMembers(safe);
-        setPresentMemberIds(new Set());
+        setPresencas({});
       } catch (err) {
-        console.error("Error fetching cell members:", err);
+        console.error("Erro ao buscar membros:", err);
         if (!cancelled) setMembers([]);
       } finally {
         if (!cancelled) setLoadingMembers(false);
@@ -131,30 +137,24 @@ export function CellReportWithAttendanceModal({
     return () => { cancelled = true; };
   }, [selectedCellId]);
 
-  const toggleMember = useCallback((memberId: string) => {
-    try {
-      setPresentMemberIds((prev) => {
-        const next = new Set(prev);
-        if (next.has(memberId)) {
-          next.delete(memberId);
-        } else {
-          next.add(memberId);
-        }
-        return next;
-      });
-    } catch (err) {
-      console.error("ERRO AO MARCAR PRESENÇA:", err);
-    }
-  }, []);
+  // Ultra-simple toggle — no side effects, no async
+  const togglePresenca = (memberId: string) => {
+    setPresencas(prev => ({
+      ...prev,
+      [memberId]: !prev[memberId],
+    }));
+  };
 
   const handleSubmit = async (data: ReportFormData) => {
     setIsSubmitting(true);
     try {
       const visitors = parseInt(data.visitors, 10) || 0;
+      const presentCount = Object.values(presencas).filter(Boolean).length;
+
       const cleanedData: CreateCellReportData = {
         cell_id: data.cell_id,
         report_date: data.report_date,
-        attendance: presentMemberIds.size + visitors,
+        attendance: presentCount + visitors,
         visitors,
         conversions: parseInt(data.conversions, 10) || 0,
         offering: data.offering ? parseFloat(data.offering) : undefined,
@@ -164,12 +164,12 @@ export function CellReportWithAttendanceModal({
       const result = await onSubmit(cleanedData);
       if (!result.error) {
         form.reset();
-        setPresentMemberIds(new Set());
+        setPresencas({});
         setMembers([]);
         onOpenChange(false);
       }
     } catch (err) {
-      console.error("Error submitting report:", err);
+      console.error("Erro ao enviar relatório:", err);
     } finally {
       setIsSubmitting(false);
     }
@@ -216,7 +216,6 @@ export function CellReportWithAttendanceModal({
                       </FormItem>
                     )}
                   />
-
                   <FormField
                     control={form.control}
                     name="report_date"
@@ -237,8 +236,8 @@ export function CellReportWithAttendanceModal({
                 <AttendanceList
                   members={members}
                   loading={loadingMembers}
-                  presentMemberIds={presentMemberIds}
-                  onToggle={toggleMember}
+                  presencas={presencas}
+                  onToggle={togglePresenca}
                 />
               )}
 

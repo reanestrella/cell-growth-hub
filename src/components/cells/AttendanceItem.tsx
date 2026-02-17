@@ -1,43 +1,28 @@
-import React from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 interface AttendanceItemProps {
-  memberId: string;
   memberName: string;
   isPresent: boolean;
-  onToggle: (memberId: string) => void;
+  onToggle: () => void;
 }
 
-export function AttendanceItem({
-  memberId,
-  memberName,
-  isPresent,
-  onToggle,
-}: AttendanceItemProps) {
+export function AttendanceItem({ memberName, isPresent, onToggle }: AttendanceItemProps) {
   const initials = (memberName || "?")
     .split(" ")
     .map((n) => n?.[0] ?? "")
     .join("")
     .slice(0, 2) || "?";
 
-  const handleClick = () => {
-    try {
-      onToggle(memberId);
-    } catch (err) {
-      console.error("Erro ao marcar presença:", err);
-    }
-  };
-
   return (
     <div
       role="button"
       tabIndex={0}
-      onClick={handleClick}
+      onClick={onToggle}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
-          handleClick();
+          onToggle();
         }
       }}
       className={`flex items-center gap-3 p-2 rounded-lg border transition-all text-left cursor-pointer select-none ${
