@@ -9,7 +9,7 @@ interface AttendanceItemProps {
   onToggle: (memberId: string) => void;
 }
 
-export const AttendanceItem = React.memo(function AttendanceItem({
+export function AttendanceItem({
   memberId,
   memberName,
   isPresent,
@@ -21,12 +21,25 @@ export const AttendanceItem = React.memo(function AttendanceItem({
     .join("")
     .slice(0, 2) || "?";
 
+  const handleClick = () => {
+    try {
+      onToggle(memberId);
+    } catch (err) {
+      console.error("Erro ao marcar presença:", err);
+    }
+  };
+
   return (
     <div
       role="button"
       tabIndex={0}
-      onClick={() => onToggle(memberId)}
-      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onToggle(memberId); } }}
+      onClick={handleClick}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          handleClick();
+        }
+      }}
       className={`flex items-center gap-3 p-2 rounded-lg border transition-all text-left cursor-pointer select-none ${
         isPresent
           ? "bg-success/10 border-success/30 hover:bg-success/20"
@@ -46,4 +59,4 @@ export const AttendanceItem = React.memo(function AttendanceItem({
       </span>
     </div>
   );
-});
+}
