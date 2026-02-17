@@ -36,9 +36,12 @@ export class CellReportErrorBoundary extends React.Component<Props, State> {
       return (
         <div className="flex flex-col items-center justify-center p-6 text-center gap-3">
           <AlertTriangle className="w-8 h-8 text-destructive" />
-          <p className="text-sm text-muted-foreground">
-            Ocorreu um erro ao carregar o relatório.
+          <p className="text-sm font-medium text-destructive">
+            Erro crítico detectado:
           </p>
+          <pre className="text-xs text-muted-foreground bg-muted p-3 rounded max-w-full overflow-auto whitespace-pre-wrap">
+            {this.state.error?.message || "Erro desconhecido"}
+          </pre>
           <Button variant="outline" size="sm" onClick={this.handleReset}>
             Tentar novamente
           </Button>

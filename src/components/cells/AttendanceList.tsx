@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Users, UserCheck, UserPlus } from "lucide-react";
@@ -17,20 +17,13 @@ interface AttendanceListProps {
   onToggle: (memberId: string) => void;
 }
 
-export const AttendanceList = React.memo(function AttendanceList({
+export function AttendanceList({
   members,
   loading,
   presentMemberIds,
   onToggle,
 }: AttendanceListProps) {
   const presentCount = presentMemberIds.size;
-
-  const handleToggle = useCallback(
-    (memberId: string) => {
-      onToggle(memberId);
-    },
-    [onToggle]
-  );
 
   return (
     <div className="mt-4 border rounded-lg p-4 flex-1 overflow-hidden flex flex-col min-h-0">
@@ -68,7 +61,7 @@ export const AttendanceList = React.memo(function AttendanceList({
                 memberId={m.memberId}
                 memberName={m.memberName}
                 isPresent={presentMemberIds.has(m.memberId)}
-                onToggle={handleToggle}
+                onToggle={onToggle}
               />
             ))}
           </div>
@@ -76,4 +69,4 @@ export const AttendanceList = React.memo(function AttendanceList({
       )}
     </div>
   );
-});
+}

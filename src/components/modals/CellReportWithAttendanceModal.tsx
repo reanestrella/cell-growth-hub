@@ -132,15 +132,19 @@ export function CellReportWithAttendanceModal({
   }, [selectedCellId]);
 
   const toggleMember = useCallback((memberId: string) => {
-    setPresentMemberIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(memberId)) {
-        next.delete(memberId);
-      } else {
-        next.add(memberId);
-      }
-      return next;
-    });
+    try {
+      setPresentMemberIds((prev) => {
+        const next = new Set(prev);
+        if (next.has(memberId)) {
+          next.delete(memberId);
+        } else {
+          next.add(memberId);
+        }
+        return next;
+      });
+    } catch (err) {
+      console.error("ERRO AO MARCAR PRESENÇA:", err);
+    }
   }, []);
 
   const handleSubmit = async (data: ReportFormData) => {
