@@ -22,16 +22,18 @@ export const AttendanceItem = React.memo(function AttendanceItem({
     .slice(0, 2) || "?";
 
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
       onClick={() => onToggle(memberId)}
-      className={`flex items-center gap-3 p-2 rounded-lg border transition-all text-left ${
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onToggle(memberId); } }}
+      className={`flex items-center gap-3 p-2 rounded-lg border transition-all text-left cursor-pointer select-none ${
         isPresent
           ? "bg-success/10 border-success/30 hover:bg-success/20"
           : "bg-muted/30 border-transparent hover:bg-muted/50"
       }`}
     >
-      <Checkbox checked={isPresent} className="pointer-events-none" />
+      <Checkbox checked={isPresent} tabIndex={-1} className="pointer-events-none" />
       <Avatar className="w-7 h-7">
         <AvatarFallback
           className={`text-xs ${isPresent ? "bg-success text-success-foreground" : "bg-muted"}`}
@@ -42,6 +44,6 @@ export const AttendanceItem = React.memo(function AttendanceItem({
       <span className={`text-sm truncate ${isPresent ? "font-medium" : ""}`}>
         {memberName}
       </span>
-    </button>
+    </div>
   );
 });
