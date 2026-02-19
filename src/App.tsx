@@ -23,6 +23,7 @@ import Visitas from "./pages/Visitas";
 import Gabinete from "./pages/Gabinete";
 import Lembretes from "./pages/Lembretes";
 import Instalar from "./pages/Instalar";
+import ExportarDados from "./pages/ExportarDados";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -57,6 +58,7 @@ const App = () => (
             <Route path="/lembretes" element={<Lembretes />} />
             <Route path="/meu-app" element={<MeuApp />} />
             <Route path="/configuracoes" element={<Configuracoes />} />
+            <Route path="/exportar-dados" element={<ExportarDados />} />
             
             {/* Catch-all */}
             <Route path="*" element={<NotFound />} />

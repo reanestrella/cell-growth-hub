@@ -20,6 +20,7 @@ import {
   Home,
   Armchair,
   Bell,
+  Download,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -48,6 +49,7 @@ const allMenuItems: MenuItem[] = [
   { icon: Armchair, label: "Gabinete", path: "/gabinete", allowedRoles: ["pastor", "secretario"] },
   { icon: Bell, label: "Lembretes", path: "/lembretes", allowedRoles: ["pastor", "secretario"] },
   { icon: User, label: "Meu App", path: "/meu-app" },
+  { icon: Download, label: "Exportar Dados", path: "/exportar-dados", allowedRoles: ["pastor"] },
 ];
 
 const bottomItems: MenuItem[] = [
